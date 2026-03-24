@@ -32,14 +32,19 @@ function todayString(): string {
   return new Date().toISOString().split("T")[0];
 }
 
+function toDateInput(value?: string): string {
+  if (!value) return "";
+  return value.split("T")[0];
+}
+
 export default function EntryForm({ mode, initial, onSubmit, onCancel }: Props) {
   const [name, setName] = useState(initial?.name ?? "");
   const [amount, setAmount] = useState(initial?.amount?.toString() ?? "");
   const [interval, setInterval] = useState<Interval>(
     initial?.interval ?? Interval.MONTHLY
   );
-  const [startDate, setStartDate] = useState(initial?.startDate ?? todayString());
-  const [endDate, setEndDate] = useState(initial?.endDate ?? "");
+  const [startDate, setStartDate] = useState(toDateInput(initial?.startDate) || todayString());
+  const [endDate, setEndDate] = useState(toDateInput(initial?.endDate));
   const [category, setCategory] = useState(initial?.category ?? "");
 
   useEffect(() => {
@@ -47,8 +52,8 @@ export default function EntryForm({ mode, initial, onSubmit, onCancel }: Props) 
       setName(initial.name ?? "");
       setAmount(initial.amount?.toString() ?? "");
       setInterval(initial.interval ?? Interval.MONTHLY);
-      setStartDate(initial.startDate ?? todayString());
-      setEndDate(initial.endDate ?? "");
+      setStartDate(toDateInput(initial.startDate) || todayString());
+      setEndDate(toDateInput(initial.endDate));
       setCategory(initial.category ?? "");
     }
   }, [initial]);

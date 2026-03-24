@@ -2,9 +2,12 @@ import { useState, useEffect, useCallback } from "react";
 import type { IncomeSource, PlannedExpense, Override } from "./types";
 import * as api from "./api";
 import ProjectionChart from "./components/ProjectionChart";
+import LedgerView from "./components/LedgerView";
 import IncomeList from "./components/IncomeList";
 import ExpenseList from "./components/ExpenseList";
 import SetBalanceModal from "./components/SetBalanceModal";
+
+type ViewMode = "chart" | "ledger";
 
 function formatCurrency(n: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -22,6 +25,7 @@ export default function App() {
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>("chart");
 
   const refresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -117,8 +121,28 @@ export default function App() {
 
       {/* Main Content */}
       <main className="container mx-auto p-4 max-w-6xl space-y-6">
-        {/* Projection Chart */}
-        <ProjectionChart overrides={overrides} refreshKey={refreshKey} />
+        {/* View Toggle */}
+        <div className="tabs tabs-boxed w-fit">
+          <button
+            className={`tab ${viewMode === "chart" ? "tab-active" : ""}`}
+            onClick={() => setViewMode("chart")}
+          >
+            Chart
+          </button>
+          <button
+            className={`tab ${viewMode === "ledger" ? "tab-active" : ""}`}
+            onClick={() => setViewMode("ledger")}
+          >
+            Ledger
+          </button>
+        </div>
+
+        {/* Projection Chart or Ledger */}
+        {viewMode === "chart" ? (
+          <ProjectionChart overrides={overrides} refreshKey={refreshKey} />
+        ) : (
+          <LedgerView overrides={overrides} refreshKey={refreshKey} />
+        )}
 
         {/* Income and Expenses Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -10,4 +10,4 @@ RUN npx prisma generate
 
 COPY server/ .
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx watch src/index.ts"]
+CMD ["sh", "-c", "npx prisma db push && npx tsx watch src/index.ts"]

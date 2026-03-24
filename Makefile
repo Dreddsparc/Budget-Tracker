@@ -113,10 +113,10 @@ shell-db: ## Open a psql session in the database container
 ##@ Database
 # ──────────────────────────────────────────────
 
-db-migrate: ## Run pending Prisma migrations
-	$(SERVER) npx prisma migrate deploy
+db-push: ## Push Prisma schema to the database (creates/updates tables)
+	$(SERVER) npx prisma db push
 
-db-migrate-create: ## Create a new Prisma migration (interactive)
+db-migrate: ## Create and run a new Prisma migration (interactive)
 	$(SERVER) npx prisma migrate dev
 
 db-reset: ## Reset the database (destroys all data, re-runs migrations)
