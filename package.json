@@ -1,0 +1,10 @@
+{
+  "name": "budget-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "docker compose up --build",
+    "down": "docker compose down",
+    "reset": "docker compose down -v && docker compose up --build"
+  }
+}
