@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { PlannedExpense } from "../types";
 import * as api from "../api";
 import EntryForm from "./EntryForm";
@@ -21,16 +21,72 @@ function formatDate(dateStr: string): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+const UNCATEGORIZED = "Uncategorized";
+
+const CATEGORY_PALETTE = [
+  "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
+  "#3b82f6", "#8b5cf6", "#ec4899", "#14b8a6", "#f43f5e",
+];
+
+function hashColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return CATEGORY_PALETTE[Math.abs(hash) % CATEGORY_PALETTE.length];
+}
+
 interface Props {
   items: PlannedExpense[];
   onRefresh: () => void;
   onToggleOverride: (id: string, active: boolean) => void;
+  categoryColors: Record<string, string>;
+  onCategoryColorChange: (name: string, color: string) => void;
 }
 
-export default function ExpenseList({ items, onRefresh, onToggleOverride }: Props) {
+export default function ExpenseList({
+  items,
+  onRefresh,
+  onToggleOverride,
+  categoryColors,
+  onCategoryColorChange,
+}: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+
+  const grouped = useMemo(() => {
+    const map = new Map<string, PlannedExpense[]>();
+    for (const item of items) {
+      const key = item.category?.trim() || UNCATEGORIZED;
+      const list = map.get(key);
+      if (list) {
+        list.push(item);
+      } else {
+        map.set(key, [item]);
+      }
+    }
+    // Sort category names alphabetically, but keep Uncategorized last
+    const sorted = [...map.entries()].sort(([a], [b]) => {
+      if (a === UNCATEGORIZED) return 1;
+      if (b === UNCATEGORIZED) return -1;
+      return a.localeCompare(b);
+    });
+    return sorted;
+  }, [items]);
+
+  function toggleCategory(category: string) {
+    setExpandedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  }
 
   async function handleAdd(data: Record<string, unknown>) {
     await api.createExpense({
@@ -57,6 +113,100 @@ export default function ExpenseList({ items, onRefresh, onToggleOverride }: Prop
     await api.toggleExpense(item.id);
     onToggleOverride(item.id, !item.active);
     onRefresh();
+  }
+
+  function renderExpenseItem(item: PlannedExpense) {
+    if (editingId === item.id) {
+      return (
+        <EntryForm
+          key={item.id}
+          mode="expense"
+          initial={item}
+          onSubmit={(data) => handleUpdate(item.id, data)}
+          onCancel={() => setEditingId(null)}
+        />
+      );
+    }
+
+    return (
+      <div key={item.id} className="rounded-lg bg-base-200 overflow-hidden">
+        <div
+          className={`flex items-center gap-3 p-3 ${
+            !item.active ? "opacity-50" : ""
+          }`}
+        >
+          <input
+            type="checkbox"
+            className="toggle toggle-error toggle-sm"
+            checked={item.active}
+            onChange={() => handleToggle(item)}
+            aria-label={`Toggle ${item.name}`}
+          />
+
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-medium truncate">{item.name}</span>
+              <span className="badge badge-sm badge-ghost">
+                {intervalLabel(item.interval)}
+              </span>
+              {item.isVariable && (
+                <span className="badge badge-sm badge-warning">
+                  Variable
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-error font-semibold">
+                {formatCurrency(item.amount)}
+              </span>
+              {item.endDate && (
+                <span className="text-base-content/50 text-xs">
+                  ends {formatDate(item.endDate)}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex gap-1">
+            {item.isVariable && (
+              <button
+                className="btn btn-ghost btn-xs"
+                onClick={() =>
+                  setExpandedScheduleId(
+                    expandedScheduleId === item.id ? null : item.id
+                  )
+                }
+                aria-label={`${expandedScheduleId === item.id ? "Hide" : "Show"} price schedule for ${item.name}`}
+                aria-expanded={expandedScheduleId === item.id}
+              >
+                {expandedScheduleId === item.id ? "▾ Prices" : "▸ Prices"}
+              </button>
+            )}
+            <button
+              className="btn btn-ghost btn-xs"
+              onClick={() => {
+                setEditingId(item.id);
+                setShowForm(false);
+              }}
+              aria-label={`Edit ${item.name}`}
+            >
+              Edit
+            </button>
+            <button
+              className="btn btn-ghost btn-xs text-error"
+              onClick={() => handleDelete(item.id)}
+              aria-label={`Delete ${item.name}`}
+            >
+              Del
+            </button>
+          </div>
+        </div>
+
+        {item.isVariable && expandedScheduleId === item.id && (
+          <PriceSchedule expense={item} onRefresh={onRefresh} />
+        )}
+      </div>
+    );
   }
 
   return (
@@ -90,100 +240,66 @@ export default function ExpenseList({ items, onRefresh, onToggleOverride }: Prop
         )}
 
         <div className="space-y-2 mt-2">
-          {items.map((item) =>
-            editingId === item.id ? (
-              <EntryForm
-                key={item.id}
-                mode="expense"
-                initial={item}
-                onSubmit={(data) => handleUpdate(item.id, data)}
-                onCancel={() => setEditingId(null)}
-              />
-            ) : (
-              <div key={item.id} className="rounded-lg bg-base-200 overflow-hidden">
-                <div
-                  className={`flex items-center gap-3 p-3 ${
-                    !item.active ? "opacity-50" : ""
-                  }`}
-                >
-                  <input
-                    type="checkbox"
-                    className="toggle toggle-error toggle-sm"
-                    checked={item.active}
-                    onChange={() => handleToggle(item)}
-                    aria-label={`Toggle ${item.name}`}
-                  />
+          {grouped.map(([category, categoryItems]) => {
+            const isOpen = expandedCategories.has(category);
+            const activeCount = categoryItems.filter((i) => i.active).length;
+            const totalAmount = categoryItems
+              .filter((i) => i.active)
+              .reduce((sum, i) => sum + i.amount, 0);
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium truncate">{item.name}</span>
-                      <span className="badge badge-sm badge-ghost">
-                        {intervalLabel(item.interval)}
-                      </span>
-                      {item.isVariable && (
-                        <span className="badge badge-sm badge-warning">
-                          Variable
-                        </span>
-                      )}
-                      {item.category && (
-                        <span className="badge badge-sm badge-outline badge-info">
-                          {item.category}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-error font-semibold">
-                        {formatCurrency(item.amount)}
-                      </span>
-                      {item.endDate && (
-                        <span className="text-base-content/50 text-xs">
-                          ends {formatDate(item.endDate)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+            const effectiveColor = categoryColors[category] || hashColor(category);
 
-                  <div className="flex gap-1">
-                    {item.isVariable && (
-                      <button
-                        className="btn btn-ghost btn-xs"
-                        onClick={() =>
-                          setExpandedScheduleId(
-                            expandedScheduleId === item.id ? null : item.id
-                          )
-                        }
-                        aria-label={`${expandedScheduleId === item.id ? "Hide" : "Show"} price schedule for ${item.name}`}
-                        aria-expanded={expandedScheduleId === item.id}
-                      >
-                        {expandedScheduleId === item.id ? "▾ Prices" : "▸ Prices"}
-                      </button>
-                    )}
-                    <button
-                      className="btn btn-ghost btn-xs"
-                      onClick={() => {
-                        setEditingId(item.id);
-                        setShowForm(false);
-                      }}
-                      aria-label={`Edit ${item.name}`}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="btn btn-ghost btn-xs text-error"
-                      onClick={() => handleDelete(item.id)}
-                      aria-label={`Delete ${item.name}`}
-                    >
-                      Del
-                    </button>
-                  </div>
+            return (
+              <div key={category} className="rounded-lg border border-base-300 overflow-hidden">
+                <div className="flex items-center bg-base-200 hover:bg-base-300 transition-colors">
+                  <button
+                    className="flex-1 flex items-center gap-3 px-4 py-3 cursor-pointer"
+                    onClick={() => toggleCategory(category)}
+                    aria-expanded={isOpen}
+                    aria-controls={`category-${category}`}
+                  >
+                    <span className="text-base-content/60 text-sm">
+                      {isOpen ? "▾" : "▸"}
+                    </span>
+                    <span
+                      className="w-3 h-3 rounded-full shrink-0"
+                      style={{ backgroundColor: effectiveColor }}
+                    />
+                    <span className="font-semibold text-sm flex-1 text-left">
+                      {category}
+                    </span>
+                    <span className="badge badge-sm badge-ghost">
+                      {activeCount}/{categoryItems.length}
+                    </span>
+                    <span className="text-error font-semibold text-sm">
+                      {formatCurrency(totalAmount)}
+                    </span>
+                  </button>
+                  <label className="relative pr-3 cursor-pointer" aria-label={`Pick color for ${category}`}>
+                    <input
+                      type="color"
+                      className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      value={effectiveColor}
+                      onChange={(e) => onCategoryColorChange(category, e.target.value)}
+                    />
+                    <span
+                      className="block w-5 h-5 rounded-full border-2 border-base-content/20"
+                      style={{ backgroundColor: effectiveColor }}
+                    />
+                  </label>
                 </div>
 
-                {item.isVariable && expandedScheduleId === item.id && (
-                  <PriceSchedule expense={item} onRefresh={onRefresh} />
+                {isOpen && (
+                  <div
+                    id={`category-${category}`}
+                    className="space-y-2 p-2"
+                  >
+                    {categoryItems.map(renderExpenseItem)}
+                  </div>
                 )}
               </div>
-            )
-          )}
+            );
+          })}
         </div>
       </div>
     </div>

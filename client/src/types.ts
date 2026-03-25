@@ -47,6 +47,12 @@ export interface ProjectionEvent {
   name: string;
   amount: number;
   type: "income" | "expense";
+  category?: string;
+}
+
+export interface CategoryColor {
+  name: string;
+  color: string;
 }
 
 export interface ProjectionDay {

@@ -61,3 +61,8 @@ model PriceAdjustment {
 
   @@index([expenseId])
 }
+
+model CategoryColor {
+  name  String @id
+  color String @default("#ef4444")
+}

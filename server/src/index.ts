@@ -4,6 +4,7 @@ import balanceRoutes from "./routes/balance";
 import incomeRoutes from "./routes/income";
 import expensesRoutes from "./routes/expenses";
 import projectionsRoutes from "./routes/projections";
+import categoriesRoutes from "./routes/categories";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -15,6 +16,7 @@ app.use("/api/balance", balanceRoutes);
 app.use("/api/income", incomeRoutes);
 app.use("/api/expenses", expensesRoutes);
 app.use("/api/projections", projectionsRoutes);
+app.use("/api/categories", categoriesRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });

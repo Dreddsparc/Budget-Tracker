@@ -5,6 +5,7 @@ import type {
   PriceAdjustment,
   ProjectionDay,
   Override,
+  CategoryColor,
 } from "./types";
 
 const BASE = "";
@@ -149,6 +150,21 @@ export function deletePriceAdjustment(
     `/api/expenses/${expenseId}/prices/${priceId}`,
     { method: "DELETE" }
   );
+}
+
+// Category Colors
+export function getCategoryColors(): Promise<CategoryColor[]> {
+  return request<CategoryColor[]>("/api/categories");
+}
+
+export function setCategoryColor(
+  name: string,
+  color: string
+): Promise<CategoryColor> {
+  return request<CategoryColor>(`/api/categories/${encodeURIComponent(name)}`, {
+    method: "PUT",
+    body: JSON.stringify({ color }),
+  });
 }
 
 // Projections

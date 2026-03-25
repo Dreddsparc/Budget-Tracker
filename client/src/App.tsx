@@ -28,6 +28,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("chart");
   const [dateRange, setDateRange] = useState<DateRange>({ kind: "preset", days: 90 });
+  const [categoryColors, setCategoryColors] = useState<Record<string, string>>({});
 
   const refresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -36,10 +37,11 @@ export default function App() {
   const fetchAll = useCallback(async () => {
     setLoading(true);
     try {
-      const [balRes, incRes, expRes] = await Promise.all([
+      const [balRes, incRes, expRes, colorsRes] = await Promise.all([
         api.getBalance(),
         api.getIncome(),
         api.getExpenses(),
+        api.getCategoryColors(),
       ]);
 
       if (balRes) {
@@ -51,6 +53,12 @@ export default function App() {
 
       setIncome(incRes);
       setExpenses(expRes);
+
+      const colorMap: Record<string, string> = {};
+      for (const c of colorsRes) {
+        colorMap[c.name] = c.color;
+      }
+      setCategoryColors(colorMap);
     } catch (err) {
       console.error("Failed to fetch data:", err);
     } finally {
@@ -77,6 +85,11 @@ export default function App() {
   function handleExpenseRefresh() {
     api.getExpenses().then(setExpenses).catch(console.error);
     refresh();
+  }
+
+  async function handleCategoryColorChange(name: string, color: string) {
+    setCategoryColors((prev) => ({ ...prev, [name]: color }));
+    await api.setCategoryColor(name, color);
   }
 
   function handleToggleOverride(id: string, active: boolean, type: "income" | "expense") {
@@ -148,6 +161,7 @@ export default function App() {
             dateRange={dateRange}
             overrides={overrides}
             refreshKey={refreshKey}
+            categoryColors={categoryColors}
           />
         ) : (
           <LedgerView
@@ -172,6 +186,8 @@ export default function App() {
             onToggleOverride={(id, active) =>
               handleToggleOverride(id, active, "expense")
             }
+            categoryColors={categoryColors}
+            onCategoryColorChange={handleCategoryColorChange}
           />
         </div>
       </main>

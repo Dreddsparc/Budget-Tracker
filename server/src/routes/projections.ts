@@ -8,6 +8,7 @@ interface ProjectionEvent {
   type: "income" | "expense";
   name: string;
   amount: number;
+  category?: string;
 }
 
 interface ProjectionDay {
@@ -80,6 +81,7 @@ interface ExpenseWithAdjustments {
   active: boolean;
   name: string;
   amount: number;
+  category: string | null;
   isVariable: boolean;
   priceAdjustments: { amount: number; startDate: Date }[];
 }
@@ -128,7 +130,9 @@ function applyDay(
     if (expense.endDate && currentDate > expense.endDate) continue;
     if (matchesInterval(expense.interval, expense.startDate, currentDate)) {
       const amount = getEffectiveAmount(expense, currentDate);
-      events.push({ type: "expense", name: expense.name, amount });
+      const event: ProjectionEvent = { type: "expense", name: expense.name, amount };
+      if (expense.category) event.category = expense.category;
+      events.push(event);
       balance -= amount;
     }
   }
