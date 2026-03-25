@@ -2,6 +2,7 @@ import type {
   BalanceSnapshot,
   IncomeSource,
   PlannedExpense,
+  PriceAdjustment,
   ProjectionDay,
   Override,
 } from "./types";
@@ -20,6 +21,7 @@ async function request<T>(
     const text = await res.text();
     throw new Error(`API error ${res.status}: ${text}`);
   }
+  if (res.status === 204) return undefined as T;
   return res.json();
 }
 
@@ -103,12 +105,64 @@ export function toggleExpense(id: string): Promise<PlannedExpense> {
   });
 }
 
+// Price Adjustments
+export function getPriceAdjustments(
+  expenseId: string
+): Promise<PriceAdjustment[]> {
+  return request<PriceAdjustment[]>(
+    `/api/expenses/${expenseId}/prices`
+  );
+}
+
+export function addPriceAdjustment(
+  expenseId: string,
+  data: { amount: number; startDate: string; note?: string }
+): Promise<PriceAdjustment> {
+  return request<PriceAdjustment>(
+    `/api/expenses/${expenseId}/prices`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+export function updatePriceAdjustment(
+  expenseId: string,
+  priceId: string,
+  data: { amount?: number; startDate?: string; note?: string }
+): Promise<PriceAdjustment> {
+  return request<PriceAdjustment>(
+    `/api/expenses/${expenseId}/prices/${priceId}`,
+    {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }
+  );
+}
+
+export function deletePriceAdjustment(
+  expenseId: string,
+  priceId: string
+): Promise<void> {
+  return request<void>(
+    `/api/expenses/${expenseId}/prices/${priceId}`,
+    { method: "DELETE" }
+  );
+}
+
 // Projections
 export function getProjections(
-  days: number,
+  range: { startDate: string; endDate: string } | { days: number },
   overrides?: Override[]
 ): Promise<ProjectionDay[]> {
-  const params = new URLSearchParams({ days: String(days) });
+  const params = new URLSearchParams();
+  if ("days" in range) {
+    params.set("days", String(range.days));
+  } else {
+    params.set("startDate", range.startDate);
+    params.set("endDate", range.endDate);
+  }
   if (overrides && overrides.length > 0) {
     params.set("overrides", JSON.stringify(overrides));
   }

@@ -9,15 +9,14 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import type { Override, ProjectionDay } from "../types";
+import type { Override, ProjectionDay, DateRange } from "../types";
 import * as api from "../api";
 
 interface Props {
+  dateRange: DateRange;
   overrides: Override[];
   refreshKey: number;
 }
-
-const DAY_OPTIONS = [30, 60, 90, 180, 365];
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -75,8 +74,7 @@ function CustomTooltip({
   );
 }
 
-export default function ProjectionChart({ overrides, refreshKey }: Props) {
-  const [days, setDays] = useState(90);
+export default function ProjectionChart({ dateRange, overrides, refreshKey }: Props) {
   const [projections, setProjections] = useState<ProjectionDay[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -84,14 +82,18 @@ export default function ProjectionChart({ overrides, refreshKey }: Props) {
     setLoading(true);
     try {
       const activeOverrides = overrides.length > 0 ? overrides : undefined;
-      const result = await api.getProjections(days, activeOverrides);
+      const range =
+        dateRange.kind === "preset"
+          ? { days: dateRange.days }
+          : { startDate: dateRange.startDate, endDate: dateRange.endDate };
+      const result = await api.getProjections(range, activeOverrides);
       setProjections(result);
     } catch (err) {
       console.error("Failed to fetch projections:", err);
     } finally {
       setLoading(false);
     }
-  }, [days, overrides, refreshKey]);
+  }, [dateRange, overrides, refreshKey]);
 
   useEffect(() => {
     fetchProjections();
@@ -104,20 +106,7 @@ export default function ProjectionChart({ overrides, refreshKey }: Props) {
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <h2 className="card-title">Balance Projection</h2>
-          <div className="flex gap-1">
-            {DAY_OPTIONS.map((d) => (
-              <button
-                key={d}
-                className={`btn btn-xs ${days === d ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => setDays(d)}
-              >
-                {d}d
-              </button>
-            ))}
-          </div>
-        </div>
+        <h2 className="card-title">Balance Projection</h2>
 
         {loading && projections.length === 0 ? (
           <div className="flex items-center justify-center h-64">

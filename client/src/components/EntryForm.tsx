@@ -9,6 +9,7 @@ interface EntryFormData {
   endDate?: string;
   category?: string;
   active: boolean;
+  isVariable?: boolean;
 }
 
 interface Props {
@@ -46,6 +47,7 @@ export default function EntryForm({ mode, initial, onSubmit, onCancel }: Props) 
   const [startDate, setStartDate] = useState(toDateInput(initial?.startDate) || todayString());
   const [endDate, setEndDate] = useState(toDateInput(initial?.endDate));
   const [category, setCategory] = useState(initial?.category ?? "");
+  const [isVariable, setIsVariable] = useState(initial?.isVariable ?? false);
 
   useEffect(() => {
     if (initial) {
@@ -55,6 +57,7 @@ export default function EntryForm({ mode, initial, onSubmit, onCancel }: Props) 
       setStartDate(toDateInput(initial.startDate) || todayString());
       setEndDate(toDateInput(initial.endDate));
       setCategory(initial.category ?? "");
+      setIsVariable(initial.isVariable ?? false);
     }
   }, [initial]);
 
@@ -74,6 +77,7 @@ export default function EntryForm({ mode, initial, onSubmit, onCancel }: Props) 
     if (mode === "expense") {
       if (endDate) data.endDate = endDate;
       if (category.trim()) data.category = category.trim();
+      data.isVariable = isVariable;
     }
 
     onSubmit(data);
@@ -158,6 +162,26 @@ export default function EntryForm({ mode, initial, onSubmit, onCancel }: Props) 
           </div>
         )}
       </div>
+
+      {mode === "expense" && (
+        <div className="form-control">
+          <label className="label cursor-pointer justify-start gap-3">
+            <input
+              type="checkbox"
+              className="toggle toggle-sm toggle-warning"
+              checked={isVariable}
+              onChange={(e) => setIsVariable(e.target.checked)}
+              aria-label="Variable price"
+            />
+            <span className="label-text">Variable price</span>
+          </label>
+          {isVariable && (
+            <p className="text-xs text-base-content/60 ml-1 -mt-1">
+              You can add price changes after saving.
+            </p>
+          )}
+        </div>
+      )}
 
       {mode === "expense" && (
         <div className="form-control">

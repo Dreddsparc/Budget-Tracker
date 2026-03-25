@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import type { Override, ProjectionDay } from "../types";
+import type { Override, ProjectionDay, DateRange } from "../types";
 import * as api from "../api";
 
 interface Props {
+  dateRange: DateRange;
   overrides: Override[];
   refreshKey: number;
 }
-
-const DAY_OPTIONS = [30, 60, 90, 180, 365];
 
 type FilterType = "all" | "income" | "expense" | "events-only";
 
@@ -30,15 +29,20 @@ function formatDate(dateStr: string): string {
 }
 
 function formatDateShort(dateStr: string): string {
+  if (!dateStr) return "";
   const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-  });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
 
-export default function LedgerView({ overrides, refreshKey }: Props) {
-  const [days, setDays] = useState(90);
+function rangeLabel(dateRange: DateRange): string {
+  if (dateRange.kind === "preset") return `over ${dateRange.days} days`;
+  const s = new Date(dateRange.startDate + "T00:00:00");
+  const e = new Date(dateRange.endDate + "T00:00:00");
+  const diffDays = Math.round((e.getTime() - s.getTime()) / (1000 * 60 * 60 * 24));
+  return `over ${diffDays} days`;
+}
+
+export default function LedgerView({ dateRange, overrides, refreshKey }: Props) {
   const [projections, setProjections] = useState<ProjectionDay[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<FilterType>("all");
@@ -48,14 +52,18 @@ export default function LedgerView({ overrides, refreshKey }: Props) {
     setLoading(true);
     try {
       const activeOverrides = overrides.length > 0 ? overrides : undefined;
-      const result = await api.getProjections(days, activeOverrides);
+      const range =
+        dateRange.kind === "preset"
+          ? { days: dateRange.days }
+          : { startDate: dateRange.startDate, endDate: dateRange.endDate };
+      const result = await api.getProjections(range, activeOverrides);
       setProjections(result);
     } catch (err) {
       console.error("Failed to fetch projections:", err);
     } finally {
       setLoading(false);
     }
-  }, [days, overrides, refreshKey]);
+  }, [dateRange, overrides, refreshKey]);
 
   useEffect(() => {
     fetchProjections();
@@ -141,21 +149,7 @@ export default function LedgerView({ overrides, refreshKey }: Props) {
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body p-4">
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <h2 className="card-title">Ledger</h2>
-          <div className="flex gap-1">
-            {DAY_OPTIONS.map((d) => (
-              <button
-                key={d}
-                className={`btn btn-xs ${days === d ? "btn-primary" : "btn-ghost"}`}
-                onClick={() => setDays(d)}
-              >
-                {d}d
-              </button>
-            ))}
-          </div>
-        </div>
+        <h2 className="card-title mb-2">Ledger</h2>
 
         {/* Summary Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
@@ -182,7 +176,7 @@ export default function LedgerView({ overrides, refreshKey }: Props) {
             >
               {formatCurrency(summary.net)}
             </div>
-            <div className="stat-desc">over {days} days</div>
+            <div className="stat-desc">{rangeLabel(dateRange)}</div>
           </div>
           <div className="stat bg-base-200 rounded-lg p-3">
             <div className="stat-title text-xs">Ending Balance</div>
@@ -261,8 +255,7 @@ export default function LedgerView({ overrides, refreshKey }: Props) {
                     }
                   >
                     <td className="font-mono text-xs">
-                      {i === 0 ||
-                      ledgerRows[i - 1].date !== row.date
+                      {i === 0 || ledgerRows[i - 1].date !== row.date
                         ? formatDate(row.date)
                         : ""}
                     </td>
@@ -271,9 +264,7 @@ export default function LedgerView({ overrides, refreshKey }: Props) {
                         <span className="flex items-center gap-1.5">
                           <span
                             className={`w-1.5 h-1.5 rounded-full inline-block ${
-                              row.type === "income"
-                                ? "bg-success"
-                                : "bg-error"
+                              row.type === "income" ? "bg-success" : "bg-error"
                             }`}
                           />
                           {row.name}
@@ -281,14 +272,10 @@ export default function LedgerView({ overrides, refreshKey }: Props) {
                       )}
                     </td>
                     <td className="text-right font-mono text-success">
-                      {row.type === "income"
-                        ? formatCurrency(row.amount)
-                        : ""}
+                      {row.type === "income" ? formatCurrency(row.amount) : ""}
                     </td>
                     <td className="text-right font-mono text-error">
-                      {row.type === "expense"
-                        ? formatCurrency(row.amount)
-                        : ""}
+                      {row.type === "expense" ? formatCurrency(row.amount) : ""}
                     </td>
                     <td
                       className={`text-right font-mono font-semibold ${

@@ -23,6 +23,13 @@ export interface IncomeSource {
   active: boolean;
 }
 
+export interface PriceAdjustment {
+  id: string;
+  amount: number;
+  startDate: string;
+  note?: string;
+}
+
 export interface PlannedExpense {
   id: string;
   name: string;
@@ -32,6 +39,8 @@ export interface PlannedExpense {
   endDate?: string;
   active: boolean;
   category?: string;
+  isVariable: boolean;
+  priceAdjustments: PriceAdjustment[];
 }
 
 export interface ProjectionEvent {
@@ -51,3 +60,7 @@ export interface Override {
   type: "income" | "expense";
   active: boolean;
 }
+
+export type DateRange =
+  | { kind: "preset"; days: number }
+  | { kind: "custom"; startDate: string; endDate: string };

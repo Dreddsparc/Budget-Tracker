@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
-import type { IncomeSource, PlannedExpense, Override } from "./types";
+import type { IncomeSource, PlannedExpense, Override, DateRange } from "./types";
 import * as api from "./api";
+import DateRangeBar from "./components/DateRangeBar";
 import ProjectionChart from "./components/ProjectionChart";
 import LedgerView from "./components/LedgerView";
 import IncomeList from "./components/IncomeList";
@@ -26,6 +27,7 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>("chart");
+  const [dateRange, setDateRange] = useState<DateRange>({ kind: "preset", days: 90 });
 
   const refresh = useCallback(() => {
     setRefreshKey((k) => k + 1);
@@ -121,27 +123,38 @@ export default function App() {
 
       {/* Main Content */}
       <main className="container mx-auto p-4 max-w-6xl space-y-6">
-        {/* View Toggle */}
-        <div className="tabs tabs-boxed w-fit">
-          <button
-            className={`tab ${viewMode === "chart" ? "tab-active" : ""}`}
-            onClick={() => setViewMode("chart")}
-          >
-            Chart
-          </button>
-          <button
-            className={`tab ${viewMode === "ledger" ? "tab-active" : ""}`}
-            onClick={() => setViewMode("ledger")}
-          >
-            Ledger
-          </button>
+        {/* Controls bar: view toggle + date range */}
+        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+          <div className="tabs tabs-boxed w-fit shrink-0">
+            <button
+              className={`tab ${viewMode === "chart" ? "tab-active" : ""}`}
+              onClick={() => setViewMode("chart")}
+            >
+              Chart
+            </button>
+            <button
+              className={`tab ${viewMode === "ledger" ? "tab-active" : ""}`}
+              onClick={() => setViewMode("ledger")}
+            >
+              Ledger
+            </button>
+          </div>
+          <DateRangeBar value={dateRange} onChange={setDateRange} />
         </div>
 
         {/* Projection Chart or Ledger */}
         {viewMode === "chart" ? (
-          <ProjectionChart overrides={overrides} refreshKey={refreshKey} />
+          <ProjectionChart
+            dateRange={dateRange}
+            overrides={overrides}
+            refreshKey={refreshKey}
+          />
         ) : (
-          <LedgerView overrides={overrides} refreshKey={refreshKey} />
+          <LedgerView
+            dateRange={dateRange}
+            overrides={overrides}
+            refreshKey={refreshKey}
+          />
         )}
 
         {/* Income and Expenses Columns */}

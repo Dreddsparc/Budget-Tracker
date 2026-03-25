@@ -21,16 +21,11 @@ interface Override {
   active: boolean;
 }
 
-/**
- * Check whether a recurring item hits on a given date based on its
- * interval and startDate. All comparisons use UTC to avoid timezone drift.
- */
 function matchesInterval(
   interval: Interval,
   startDate: Date,
   checkDate: Date
 ): boolean {
-  // Normalize to UTC midnight for clean date comparison
   const start = new Date(
     Date.UTC(
       startDate.getUTCFullYear(),
@@ -46,7 +41,6 @@ function matchesInterval(
     )
   );
 
-  // Cannot trigger before the start date
   if (check < start) return false;
 
   const diffMs = check.getTime() - start.getTime();
@@ -55,49 +49,97 @@ function matchesInterval(
   switch (interval) {
     case "ONE_TIME":
       return diffDays === 0;
-
     case "DAILY":
       return true;
-
     case "WEEKLY":
       return diffDays % 7 === 0;
-
     case "BIWEEKLY":
       return diffDays % 14 === 0;
-
     case "MONTHLY":
-      // Same day-of-month as startDate
       return check.getUTCDate() === start.getUTCDate();
-
     case "QUARTERLY":
-      // Every 3 months on same day-of-month
       if (check.getUTCDate() !== start.getUTCDate()) return false;
       const monthDiff =
         (check.getUTCFullYear() - start.getUTCFullYear()) * 12 +
         (check.getUTCMonth() - start.getUTCMonth());
       return monthDiff >= 0 && monthDiff % 3 === 0;
-
     case "YEARLY":
-      // Same month and day each year
       return (
         check.getUTCMonth() === start.getUTCMonth() &&
         check.getUTCDate() === start.getUTCDate()
       );
-
     default:
       return false;
   }
 }
 
-// GET /api/projections?days=90&overrides=[...]
+interface ExpenseWithAdjustments {
+  interval: Interval;
+  startDate: Date;
+  endDate: Date | null;
+  active: boolean;
+  name: string;
+  amount: number;
+  isVariable: boolean;
+  priceAdjustments: { amount: number; startDate: Date }[];
+}
+
+function getEffectiveAmount(
+  expense: { amount: number; isVariable: boolean; priceAdjustments: { amount: number; startDate: Date }[] },
+  currentDate: Date
+): number {
+  if (!expense.isVariable || expense.priceAdjustments.length === 0) {
+    return expense.amount;
+  }
+  // Find the most recent adjustment that is on or before currentDate
+  let effectiveAmount = expense.amount;
+  for (const adj of expense.priceAdjustments) {
+    // priceAdjustments are sorted by startDate asc
+    const adjDate = new Date(Date.UTC(adj.startDate.getUTCFullYear(), adj.startDate.getUTCMonth(), adj.startDate.getUTCDate()));
+    const checkDate = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate()));
+    if (adjDate <= checkDate) {
+      effectiveAmount = adj.amount;
+    } else {
+      break;
+    }
+  }
+  return effectiveAmount;
+}
+
+function applyDay(
+  currentDate: Date,
+  runningBalance: number,
+  effectiveIncome: { interval: Interval; startDate: Date; active: boolean; name: string; amount: number }[],
+  effectiveExpenses: ExpenseWithAdjustments[]
+): { balance: number; events: ProjectionEvent[] } {
+  const events: ProjectionEvent[] = [];
+  let balance = runningBalance;
+
+  for (const source of effectiveIncome) {
+    if (!source.active) continue;
+    if (matchesInterval(source.interval, source.startDate, currentDate)) {
+      events.push({ type: "income", name: source.name, amount: source.amount });
+      balance += source.amount;
+    }
+  }
+
+  for (const expense of effectiveExpenses) {
+    if (!expense.active) continue;
+    if (expense.endDate && currentDate > expense.endDate) continue;
+    if (matchesInterval(expense.interval, expense.startDate, currentDate)) {
+      const amount = getEffectiveAmount(expense, currentDate);
+      events.push({ type: "expense", name: expense.name, amount });
+      balance -= amount;
+    }
+  }
+
+  return { balance: Math.round(balance * 100) / 100, events };
+}
+
+// GET /api/projections?startDate=2026-03-01&endDate=2026-04-30&overrides=[...]
+// Legacy support: ?days=90 still works (from today forward)
 router.get("/", async (req: Request, res: Response) => {
   try {
-    const days = parseInt(req.query.days as string) || 90;
-
-    // Cap at a reasonable limit to prevent abuse
-    const cappedDays = Math.min(days, 365 * 2);
-
-    // Parse optional overrides for what-if scenarios
     let overrides: Override[] = [];
     if (req.query.overrides) {
       try {
@@ -113,19 +155,43 @@ router.get("/", async (req: Request, res: Response) => {
       overrideMap.set(o.id, o.active);
     }
 
-    // Fetch latest balance snapshot as starting point
+    // Determine the date window
+    const today = new Date();
+    const todayUTC = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+    );
+
+    let windowStart: Date;
+    let windowEnd: Date;
+
+    if (req.query.startDate && req.query.endDate) {
+      windowStart = new Date(req.query.startDate as string + "T00:00:00Z");
+      windowEnd = new Date(req.query.endDate as string + "T00:00:00Z");
+    } else {
+      const days = Math.min(parseInt(req.query.days as string) || 90, 365 * 2);
+      windowStart = todayUTC;
+      windowEnd = new Date(todayUTC);
+      windowEnd.setUTCDate(windowEnd.getUTCDate() + days - 1);
+    }
+
+    // Cap window to 2 years max
+    const maxEnd = new Date(windowStart);
+    maxEnd.setUTCDate(maxEnd.getUTCDate() + 365 * 2);
+    if (windowEnd > maxEnd) windowEnd = maxEnd;
+
+    // Fetch data
     const latestBalance = await prisma.balanceSnapshot.findFirst({
       orderBy: { date: "desc" },
     });
     let runningBalance = latestBalance?.amount ?? 0;
 
-    // Fetch all income sources and expenses
     const [incomeSources, expenses] = await Promise.all([
       prisma.incomeSource.findMany(),
-      prisma.plannedExpense.findMany(),
+      prisma.plannedExpense.findMany({
+        include: { priceAdjustments: { orderBy: { startDate: "asc" } } },
+      }),
     ]);
 
-    // Apply overrides to determine effective active status
     const effectiveIncome = incomeSources.map((s) => ({
       ...s,
       active: overrideMap.has(s.id) ? overrideMap.get(s.id)! : s.active,
@@ -136,53 +202,32 @@ router.get("/", async (req: Request, res: Response) => {
       active: overrideMap.has(e.id) ? overrideMap.get(e.id)! : e.active,
     }));
 
+    // If window starts after today, we need to simulate from today
+    // to the window start to get the correct starting balance
+    if (windowStart > todayUTC) {
+      const current = new Date(todayUTC);
+      while (current < windowStart) {
+        const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses);
+        runningBalance = result.balance;
+        current.setUTCDate(current.getUTCDate() + 1);
+      }
+    }
+
+    // Generate projections for the visible window
     const projections: ProjectionDay[] = [];
-    const today = new Date();
-    const startOfToday = new Date(
-      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
-    );
+    const current = new Date(windowStart);
 
-    for (let i = 0; i < cappedDays; i++) {
-      const currentDate = new Date(startOfToday);
-      currentDate.setUTCDate(currentDate.getUTCDate() + i);
-
-      const events: ProjectionEvent[] = [];
-
-      // Check each active income source
-      for (const source of effectiveIncome) {
-        if (!source.active) continue;
-        if (matchesInterval(source.interval, source.startDate, currentDate)) {
-          events.push({
-            type: "income",
-            name: source.name,
-            amount: source.amount,
-          });
-          runningBalance += source.amount;
-        }
-      }
-
-      // Check each active planned expense
-      for (const expense of effectiveExpenses) {
-        if (!expense.active) continue;
-        // Respect endDate if set
-        if (expense.endDate && currentDate > expense.endDate) continue;
-        if (
-          matchesInterval(expense.interval, expense.startDate, currentDate)
-        ) {
-          events.push({
-            type: "expense",
-            name: expense.name,
-            amount: expense.amount,
-          });
-          runningBalance -= expense.amount;
-        }
-      }
+    while (current <= windowEnd) {
+      const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses);
+      runningBalance = result.balance;
 
       projections.push({
-        date: currentDate.toISOString().split("T")[0],
-        balance: Math.round(runningBalance * 100) / 100,
-        events,
+        date: current.toISOString().split("T")[0],
+        balance: result.balance,
+        events: result.events,
       });
+
+      current.setUTCDate(current.getUTCDate() + 1);
     }
 
     res.json(projections);
