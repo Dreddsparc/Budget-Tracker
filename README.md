@@ -22,11 +22,14 @@ A personal budget tracking and forecasting tool. Enter your current balance, def
 # 1. Clone the repository
 git clone <repo-url> && cd Budget-Tracker
 
-# 2. Start everything
+# 2. Create your environment file
+cp .env.example .env
+
+# 3. Start everything
 make dev
 ```
 
-That's it. Docker Compose builds both containers, starts PostgreSQL, runs database migrations, and launches the app. Once you see output from all three services:
+That's it. The defaults work immediately for local development. Docker Compose builds both containers, starts PostgreSQL, runs database migrations, and launches the app. Once you see output from all three services:
 
 - **App**: http://localhost:5173
 - **API**: http://localhost:3001
@@ -156,7 +159,7 @@ SELECT * FROM "PlannedExpense";
 Budget-Tracker/
 ├── Makefile                    # All dev commands
 ├── docker-compose.yml          # Service definitions (db, server, client)
-├── .env                        # Database credentials
+├── .env.example                # Environment template (copy to .env)
 ├── server/
 │   ├── Dockerfile
 │   ├── package.json
@@ -188,7 +191,13 @@ Budget-Tracker/
 
 ## Environment Variables
 
-All configuration lives in `.env` at the project root. Defaults work out of the box for local development:
+Configuration lives in `.env` at the project root (not committed to git). Copy the example file to get started:
+
+```bash
+cp .env.example .env
+```
+
+The defaults work out of the box for local development. **For any shared or production deployment, change the database credentials to strong, unique values.**
 
 | Variable            | Default                                          | Description            |
 |---------------------|--------------------------------------------------|------------------------|
