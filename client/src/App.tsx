@@ -7,6 +7,7 @@ import LedgerView from "./components/LedgerView";
 import IncomeList from "./components/IncomeList";
 import ExpenseList from "./components/ExpenseList";
 import SetBalanceModal from "./components/SetBalanceModal";
+import SpreadsheetControls from "./components/SpreadsheetControls";
 
 type ViewMode = "chart" | "ledger";
 
@@ -114,7 +115,8 @@ export default function App() {
         <div className="navbar-start">
           <h1 className="text-xl font-bold px-4">Budget Tracker</h1>
         </div>
-        <div className="navbar-end px-4">
+        <div className="navbar-end px-4 gap-2">
+          <SpreadsheetControls onImportComplete={fetchAll} />
           <button
             className="btn btn-ghost"
             onClick={() => setShowBalanceModal(true)}

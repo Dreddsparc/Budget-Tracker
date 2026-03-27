@@ -42,7 +42,7 @@ Monorepo with two independent npm projects (`client/` and `server/`) orchestrate
 ### Server (Express + Prisma + PostgreSQL)
 
 - Entry: `server/src/index.ts` — Express app mounting route modules under `/api/*`
-- Routes: `server/src/routes/{balance,income,expenses,projections}.ts` — each exports a Router
+- Routes: `server/src/routes/{balance,income,expenses,projections,spreadsheet}.ts` — each exports a Router
 - DB client: `server/src/lib/prisma.ts` — singleton Prisma instance
 - Schema: `server/prisma/schema.prisma` — 4 models: `BalanceSnapshot`, `IncomeSource`, `PlannedExpense`, `PriceAdjustment`
 - Hot reload via `tsx watch` in Docker
@@ -61,6 +61,7 @@ Monorepo with two independent npm projects (`client/` and `server/`) orchestrate
 - **Projections engine** (`server/src/routes/projections.ts`): The core feature. Simulates day-by-day balance from today forward, applying income/expense events based on their `Interval` (ONE_TIME, DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY). Supports date-range queries and client-side toggle overrides for what-if analysis.
 - **Variable expenses**: Expenses with `isVariable: true` can have `PriceAdjustment` records that change the effective amount at specific dates.
 - **Overrides**: Client-side only — toggles income/expenses on/off temporarily without persisting, passed as query params to the projections endpoint.
+- **Spreadsheet exchange** (`server/src/routes/spreadsheet.ts`): Export all data to a formatted Excel workbook with instructions, data validation, and color-coded sheets. Import a modified workbook to create/update/delete records. Uses `exceljs` and `multer`.
 
 ### API Routes
 
@@ -76,6 +77,8 @@ Monorepo with two independent npm projects (`client/` and `server/`) orchestrate
 | `/api/expenses/:id/prices` | GET, POST | Price adjustments for variable expenses |
 | `/api/expenses/:id/prices/:priceId` | PUT, DELETE | Update/delete price adjustment |
 | `/api/projections` | GET | Balance forecast (query: startDate/endDate or days, overrides) |
+| `/api/spreadsheet/export` | GET | Download all data as formatted Excel workbook |
+| `/api/spreadsheet/import` | POST | Upload modified workbook to sync data (multipart/form-data) |
 | `/api/health` | GET | Health check |
 
 ### Ports

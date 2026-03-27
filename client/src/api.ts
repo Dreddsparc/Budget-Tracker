@@ -167,6 +167,30 @@ export function setCategoryColor(
   });
 }
 
+// Spreadsheet
+export function exportSpreadsheet(): Promise<Blob> {
+  return fetch(`${BASE}/api/spreadsheet/export`).then((res) => {
+    if (!res.ok) throw new Error(`Export failed: ${res.status}`);
+    return res.blob();
+  });
+}
+
+export async function importSpreadsheet(
+  file: File
+): Promise<{ message: string; results: Record<string, unknown> }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${BASE}/api/spreadsheet/import`, {
+    method: "POST",
+    body: form,
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Import failed: ${text}`);
+  }
+  return res.json();
+}
+
 // Projections
 export function getProjections(
   range: { startDate: string; endDate: string } | { days: number },
