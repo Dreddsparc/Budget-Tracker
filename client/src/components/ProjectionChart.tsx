@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useMemo } from "react";
 import {
   AreaChart,
   Area,
@@ -9,8 +9,7 @@ import {
   ResponsiveContainer,
   ReferenceLine,
 } from "recharts";
-import type { Override, ProjectionDay, DateRange } from "../types";
-import * as api from "../api";
+import type { ProjectionDay } from "../types";
 
 const DEFAULT_LINE_COLOR = "#36d399";
 
@@ -28,9 +27,7 @@ function hashColor(name: string): string {
 }
 
 interface Props {
-  dateRange: DateRange;
-  overrides: Override[];
-  refreshKey: number;
+  projections: ProjectionDay[];
   categoryColors: Record<string, string>;
 }
 
@@ -103,31 +100,7 @@ function CustomTooltip({
   );
 }
 
-export default function ProjectionChart({ dateRange, overrides, refreshKey, categoryColors }: Props) {
-  const [projections, setProjections] = useState<ProjectionDay[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const fetchProjections = useCallback(async () => {
-    setLoading(true);
-    try {
-      const activeOverrides = overrides.length > 0 ? overrides : undefined;
-      const range =
-        dateRange.kind === "preset"
-          ? { days: dateRange.days }
-          : { startDate: dateRange.startDate, endDate: dateRange.endDate };
-      const result = await api.getProjections(range, activeOverrides);
-      setProjections(result);
-    } catch (err) {
-      console.error("Failed to fetch projections:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange, overrides, refreshKey]);
-
-  useEffect(() => {
-    fetchProjections();
-  }, [fetchProjections]);
-
+export default function ProjectionChart({ projections, categoryColors }: Props) {
   const minBalance = Math.min(...projections.map((p) => p.balance), 0);
   const maxBalance = Math.max(...projections.map((p) => p.balance), 0);
   const yPadding = Math.max(Math.abs(maxBalance - minBalance) * 0.1, 100);
@@ -191,67 +164,71 @@ export default function ProjectionChart({ dateRange, overrides, refreshKey, cate
     return <circle cx={props.cx} cy={props.cy} r={4} fill={color} stroke="white" strokeWidth={1} />;
   }
 
+  if (projections.length === 0) {
+    return (
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body items-center justify-center h-[430px]">
+          <p className="text-base-content/50">No projection data</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body">
         <h2 className="card-title">Balance Projection</h2>
 
-        {loading && projections.length === 0 ? (
-          <div className="flex items-center justify-center h-64">
-            <span className="loading loading-spinner loading-lg" />
-          </div>
-        ) : (
-          <ResponsiveContainer width="100%" height={350}>
-            <AreaChart
-              data={projections}
-              margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
-            >
-              <defs>
-                <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#36d399" stopOpacity={0.3} />
-                  <stop offset="50%" stopColor="#36d399" stopOpacity={0.05} />
-                  <stop offset="95%" stopColor="#f87272" stopOpacity={0.3} />
+        <ResponsiveContainer width="100%" height={350}>
+          <AreaChart
+            data={projections}
+            margin={{ top: 10, right: 10, left: 10, bottom: 0 }}
+          >
+            <defs>
+              <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#36d399" stopOpacity={0.3} />
+                <stop offset="50%" stopColor="#36d399" stopOpacity={0.05} />
+                <stop offset="95%" stopColor="#f87272" stopOpacity={0.3} />
+              </linearGradient>
+              {strokeStops && (
+                <linearGradient id="categoryStrokeGradient" x1="0" y1="0" x2="1" y2="0">
+                  {strokeStops.map((s, i) => (
+                    <stop
+                      key={i}
+                      offset={`${(s.offset * 100).toFixed(2)}%`}
+                      stopColor={s.color}
+                    />
+                  ))}
                 </linearGradient>
-                {strokeStops && (
-                  <linearGradient id="categoryStrokeGradient" x1="0" y1="0" x2="1" y2="0">
-                    {strokeStops.map((s, i) => (
-                      <stop
-                        key={i}
-                        offset={`${(s.offset * 100).toFixed(2)}%`}
-                        stopColor={s.color}
-                      />
-                    ))}
-                  </linearGradient>
-                )}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis
-                dataKey="date"
-                tickFormatter={formatDate}
-                tick={{ fontSize: 12 }}
-                interval="preserveStartEnd"
-                minTickGap={40}
-              />
-              <YAxis
-                tickFormatter={formatCurrency}
-                tick={{ fontSize: 12 }}
-                domain={[minBalance - yPadding, maxBalance + yPadding]}
-                width={80}
-              />
-              <Tooltip content={<CustomTooltip categoryColors={categoryColors} />} />
-              <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" strokeDasharray="3 3" />
-              <Area
-                type="monotone"
-                dataKey="balance"
-                stroke={strokeStops ? "url(#categoryStrokeGradient)" : DEFAULT_LINE_COLOR}
-                fill="url(#balanceGradient)"
-                strokeWidth={2}
-                dot={false}
-                activeDot={renderActiveDot}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        )}
+              )}
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+            <XAxis
+              dataKey="date"
+              tickFormatter={formatDate}
+              tick={{ fontSize: 12 }}
+              interval="preserveStartEnd"
+              minTickGap={40}
+            />
+            <YAxis
+              tickFormatter={formatCurrency}
+              tick={{ fontSize: 12 }}
+              domain={[minBalance - yPadding, maxBalance + yPadding]}
+              width={80}
+            />
+            <Tooltip content={<CustomTooltip categoryColors={categoryColors} />} />
+            <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" strokeDasharray="3 3" />
+            <Area
+              type="monotone"
+              dataKey="balance"
+              stroke={strokeStops ? "url(#categoryStrokeGradient)" : DEFAULT_LINE_COLOR}
+              fill="url(#balanceGradient)"
+              strokeWidth={2}
+              dot={false}
+              activeDot={renderActiveDot}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
