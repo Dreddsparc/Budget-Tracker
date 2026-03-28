@@ -5,6 +5,7 @@ dist/
 .DS_Store
 .vscode/
 .idea/
+Dev-Notes/
 
 # Prisma
 server/prisma/*.db
