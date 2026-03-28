@@ -1,11 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import type { Override, ProjectionDay, DateRange } from "../types";
-import * as api from "../api";
+import { useState, useMemo } from "react";
+import type { ProjectionDay, DateRange } from "../types";
 
 interface Props {
+  projections: ProjectionDay[];
   dateRange: DateRange;
-  overrides: Override[];
-  refreshKey: number;
+  loading: boolean;
 }
 
 type FilterType = "all" | "income" | "expense" | "events-only";
@@ -42,32 +41,9 @@ function rangeLabel(dateRange: DateRange): string {
   return `over ${diffDays} days`;
 }
 
-export default function LedgerView({ dateRange, overrides, refreshKey }: Props) {
-  const [projections, setProjections] = useState<ProjectionDay[]>([]);
-  const [loading, setLoading] = useState(false);
+export default function LedgerView({ projections, dateRange, loading }: Props) {
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
-
-  const fetchProjections = useCallback(async () => {
-    setLoading(true);
-    try {
-      const activeOverrides = overrides.length > 0 ? overrides : undefined;
-      const range =
-        dateRange.kind === "preset"
-          ? { days: dateRange.days }
-          : { startDate: dateRange.startDate, endDate: dateRange.endDate };
-      const result = await api.getProjections(range, activeOverrides);
-      setProjections(result);
-    } catch (err) {
-      console.error("Failed to fetch projections:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange, overrides, refreshKey]);
-
-  useEffect(() => {
-    fetchProjections();
-  }, [fetchProjections]);
 
   const ledgerRows = useMemo(() => {
     const rows: {

@@ -1,6 +1,8 @@
 import type {
+  Account,
   BalanceSnapshot,
   IncomeSource,
+  IncomingTransfer,
   PlannedExpense,
   PriceAdjustment,
   ProjectionDay,
@@ -26,101 +28,134 @@ async function request<T>(
   return res.json();
 }
 
-// Balance
-export function getBalance(): Promise<BalanceSnapshot | null> {
-  return request<BalanceSnapshot | null>("/api/balance");
+// Accounts
+export function getAccounts(): Promise<Account[]> {
+  return request<Account[]>("/api/accounts");
 }
 
-export function setBalance(amount: number): Promise<BalanceSnapshot> {
-  return request<BalanceSnapshot>("/api/balance", {
+export function createAccount(name: string): Promise<Account> {
+  return request<Account>("/api/accounts", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function updateAccount(id: string, name: string): Promise<Account> {
+  return request<Account>(`/api/accounts/${id}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteAccount(id: string): Promise<void> {
+  return request<void>(`/api/accounts/${id}`, { method: "DELETE" });
+}
+
+// Balance
+export function getBalance(accountId: string): Promise<BalanceSnapshot | null> {
+  return request<BalanceSnapshot | null>(`/api/accounts/${accountId}/balance`);
+}
+
+export function setBalance(accountId: string, amount: number): Promise<BalanceSnapshot> {
+  return request<BalanceSnapshot>(`/api/accounts/${accountId}/balance`, {
     method: "POST",
     body: JSON.stringify({ amount, date: new Date().toISOString().split("T")[0] }),
   });
 }
 
 // Income
-export function getIncome(): Promise<IncomeSource[]> {
-  return request<IncomeSource[]>("/api/income");
+export function getIncome(accountId: string): Promise<IncomeSource[]> {
+  return request<IncomeSource[]>(`/api/accounts/${accountId}/income`);
+}
+
+export function getIncomingTransfers(accountId: string): Promise<IncomingTransfer[]> {
+  return request<IncomingTransfer[]>(`/api/accounts/${accountId}/income/transfers`);
 }
 
 export function createIncome(
+  accountId: string,
   data: Omit<IncomeSource, "id">
 ): Promise<IncomeSource> {
-  return request<IncomeSource>("/api/income", {
+  return request<IncomeSource>(`/api/accounts/${accountId}/income`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export function updateIncome(
+  accountId: string,
   id: string,
   data: Partial<IncomeSource>
 ): Promise<IncomeSource> {
-  return request<IncomeSource>(`/api/income/${id}`, {
+  return request<IncomeSource>(`/api/accounts/${accountId}/income/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
-export function deleteIncome(id: string): Promise<void> {
-  return request<void>(`/api/income/${id}`, { method: "DELETE" });
+export function deleteIncome(accountId: string, id: string): Promise<void> {
+  return request<void>(`/api/accounts/${accountId}/income/${id}`, { method: "DELETE" });
 }
 
-export function toggleIncome(id: string): Promise<IncomeSource> {
-  return request<IncomeSource>(`/api/income/${id}/toggle`, {
+export function toggleIncome(accountId: string, id: string): Promise<IncomeSource> {
+  return request<IncomeSource>(`/api/accounts/${accountId}/income/${id}/toggle`, {
     method: "PATCH",
   });
 }
 
 // Expenses
-export function getExpenses(): Promise<PlannedExpense[]> {
-  return request<PlannedExpense[]>("/api/expenses");
+export function getExpenses(accountId: string): Promise<PlannedExpense[]> {
+  return request<PlannedExpense[]>(`/api/accounts/${accountId}/expenses`);
 }
 
 export function createExpense(
+  accountId: string,
   data: Omit<PlannedExpense, "id">
 ): Promise<PlannedExpense> {
-  return request<PlannedExpense>("/api/expenses", {
+  return request<PlannedExpense>(`/api/accounts/${accountId}/expenses`, {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
 export function updateExpense(
+  accountId: string,
   id: string,
   data: Partial<PlannedExpense>
 ): Promise<PlannedExpense> {
-  return request<PlannedExpense>(`/api/expenses/${id}`, {
+  return request<PlannedExpense>(`/api/accounts/${accountId}/expenses/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
 }
 
-export function deleteExpense(id: string): Promise<void> {
-  return request<void>(`/api/expenses/${id}`, { method: "DELETE" });
+export function deleteExpense(accountId: string, id: string): Promise<void> {
+  return request<void>(`/api/accounts/${accountId}/expenses/${id}`, { method: "DELETE" });
 }
 
-export function toggleExpense(id: string): Promise<PlannedExpense> {
-  return request<PlannedExpense>(`/api/expenses/${id}/toggle`, {
+export function toggleExpense(accountId: string, id: string): Promise<PlannedExpense> {
+  return request<PlannedExpense>(`/api/accounts/${accountId}/expenses/${id}/toggle`, {
     method: "PATCH",
   });
 }
 
 // Price Adjustments
 export function getPriceAdjustments(
+  accountId: string,
   expenseId: string
 ): Promise<PriceAdjustment[]> {
   return request<PriceAdjustment[]>(
-    `/api/expenses/${expenseId}/prices`
+    `/api/accounts/${accountId}/expenses/${expenseId}/prices`
   );
 }
 
 export function addPriceAdjustment(
+  accountId: string,
   expenseId: string,
   data: { amount: number; startDate: string; note?: string }
 ): Promise<PriceAdjustment> {
   return request<PriceAdjustment>(
-    `/api/expenses/${expenseId}/prices`,
+    `/api/accounts/${accountId}/expenses/${expenseId}/prices`,
     {
       method: "POST",
       body: JSON.stringify(data),
@@ -129,12 +164,13 @@ export function addPriceAdjustment(
 }
 
 export function updatePriceAdjustment(
+  accountId: string,
   expenseId: string,
   priceId: string,
   data: { amount?: number; startDate?: string; note?: string }
 ): Promise<PriceAdjustment> {
   return request<PriceAdjustment>(
-    `/api/expenses/${expenseId}/prices/${priceId}`,
+    `/api/accounts/${accountId}/expenses/${expenseId}/prices/${priceId}`,
     {
       method: "PUT",
       body: JSON.stringify(data),
@@ -143,44 +179,59 @@ export function updatePriceAdjustment(
 }
 
 export function deletePriceAdjustment(
+  accountId: string,
   expenseId: string,
   priceId: string
 ): Promise<void> {
   return request<void>(
-    `/api/expenses/${expenseId}/prices/${priceId}`,
+    `/api/accounts/${accountId}/expenses/${expenseId}/prices/${priceId}`,
     { method: "DELETE" }
   );
 }
 
-// Category Colors
-export function getCategoryColors(): Promise<CategoryColor[]> {
+// Categories (global, not account-scoped)
+export function getCategories(): Promise<CategoryColor[]> {
   return request<CategoryColor[]>("/api/categories");
 }
 
-export function setCategoryColor(
+export function createCategory(data: { name: string; color?: string; description?: string }): Promise<CategoryColor> {
+  return request<CategoryColor>("/api/categories", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateCategory(
   name: string,
-  color: string
+  data: { color?: string; description?: string; newName?: string }
 ): Promise<CategoryColor> {
   return request<CategoryColor>(`/api/categories/${encodeURIComponent(name)}`, {
     method: "PUT",
-    body: JSON.stringify({ color }),
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteCategory(name: string): Promise<void> {
+  return request<void>(`/api/categories/${encodeURIComponent(name)}`, {
+    method: "DELETE",
   });
 }
 
 // Spreadsheet
-export function exportSpreadsheet(): Promise<Blob> {
-  return fetch(`${BASE}/api/spreadsheet/export`).then((res) => {
+export function exportSpreadsheet(accountId: string): Promise<Blob> {
+  return fetch(`${BASE}/api/accounts/${accountId}/spreadsheet/export`).then((res) => {
     if (!res.ok) throw new Error(`Export failed: ${res.status}`);
     return res.blob();
   });
 }
 
 export async function importSpreadsheet(
+  accountId: string,
   file: File
 ): Promise<{ message: string; results: Record<string, unknown> }> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE}/api/spreadsheet/import`, {
+  const res = await fetch(`${BASE}/api/accounts/${accountId}/spreadsheet/import`, {
     method: "POST",
     body: form,
   });
@@ -193,6 +244,7 @@ export async function importSpreadsheet(
 
 // Projections
 export function getProjections(
+  accountId: string,
   range: { startDate: string; endDate: string } | { days: number },
   overrides?: Override[]
 ): Promise<ProjectionDay[]> {
@@ -207,6 +259,6 @@ export function getProjections(
     params.set("overrides", JSON.stringify(overrides));
   }
   return request<ProjectionDay[]>(
-    `/api/projections?${params.toString()}`
+    `/api/accounts/${accountId}/projections?${params.toString()}`
   );
 }

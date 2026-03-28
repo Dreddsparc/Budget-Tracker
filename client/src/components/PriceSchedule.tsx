@@ -24,11 +24,12 @@ function todayString(): string {
 }
 
 interface Props {
+  accountId: string;
   expense: PlannedExpense;
   onRefresh: () => void;
 }
 
-export default function PriceSchedule({ expense, onRefresh }: Props) {
+export default function PriceSchedule({ accountId, expense, onRefresh }: Props) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newAmount, setNewAmount] = useState("");
   const [newDate, setNewDate] = useState(todayString());
@@ -52,7 +53,7 @@ export default function PriceSchedule({ expense, onRefresh }: Props) {
       if (newNote.trim()) {
         data.note = newNote.trim();
       }
-      await api.addPriceAdjustment(expense.id, data);
+      await api.addPriceAdjustment(accountId, expense.id, data);
       setShowAddForm(false);
       setNewAmount("");
       setNewDate(todayString());
@@ -66,7 +67,7 @@ export default function PriceSchedule({ expense, onRefresh }: Props) {
   async function handleDelete(priceId: string) {
     setLoading(true);
     try {
-      await api.deletePriceAdjustment(expense.id, priceId);
+      await api.deletePriceAdjustment(accountId, expense.id, priceId);
       onRefresh();
     } finally {
       setLoading(false);

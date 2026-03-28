@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { IncomeSource, PlannedExpense, Override, DateRange, ProjectionDay } from "./types";
+import type { Account, IncomeSource, IncomingTransfer, PlannedExpense, Override, DateRange, ProjectionDay, CategoryColor } from "./types";
 import * as api from "./api";
 import DateRangeBar from "./components/DateRangeBar";
 import ProjectionChart from "./components/ProjectionChart";
@@ -11,6 +11,8 @@ import LedgerView from "./components/LedgerView";
 import IncomeList from "./components/IncomeList";
 import ExpenseList from "./components/ExpenseList";
 import SetBalanceModal from "./components/SetBalanceModal";
+import AccountManageModal from "./components/AccountManageModal";
+import CategoryManageModal from "./components/CategoryManageModal";
 import SpreadsheetControls from "./components/SpreadsheetControls";
 
 type ChartType = "projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend";
@@ -34,8 +36,13 @@ function formatCurrency(n: number): string {
 }
 
 export default function App() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [activeAccountId, setActiveAccountId] = useState<string | null>(null);
+  const [showAccountModal, setShowAccountModal] = useState(false);
+
   const [balance, setBalance] = useState<number | null>(null);
   const [income, setIncome] = useState<IncomeSource[]>([]);
+  const [incomingTransfers, setIncomingTransfers] = useState<IncomingTransfer[]>([]);
   const [expenses, setExpenses] = useState<PlannedExpense[]>([]);
   const [overrides, setOverrides] = useState<Override[]>([]);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
@@ -44,7 +51,9 @@ export default function App() {
   const [viewMode, setViewMode] = useState<ViewMode>("chart");
   const [chartType, setChartType] = useState<ChartType>("projection");
   const [dateRange, setDateRange] = useState<DateRange>({ kind: "preset", days: 90 });
+  const [categories, setCategories] = useState<CategoryColor[]>([]);
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>({});
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [projections, setProjections] = useState<ProjectionDay[]>([]);
   const [projectionsLoading, setProjectionsLoading] = useState(false);
 
@@ -52,14 +61,33 @@ export default function App() {
     setRefreshKey((k) => k + 1);
   }, []);
 
+  // Load accounts on mount
+  const fetchAccounts = useCallback(async () => {
+    const accs = await api.getAccounts();
+    setAccounts(accs);
+    return accs;
+  }, []);
+
+  useEffect(() => {
+    fetchAccounts().then((accs) => {
+      if (accs.length === 0) return;
+      const saved = localStorage.getItem("activeAccountId");
+      const valid = accs.find((a) => a.id === saved);
+      setActiveAccountId(valid ? valid.id : accs[0].id);
+    });
+  }, [fetchAccounts]);
+
+  // Fetch all data for the active account
   const fetchAll = useCallback(async () => {
+    if (!activeAccountId) return;
     setLoading(true);
     try {
-      const [balRes, incRes, expRes, colorsRes] = await Promise.all([
-        api.getBalance(),
-        api.getIncome(),
-        api.getExpenses(),
-        api.getCategoryColors(),
+      const [balRes, incRes, transfersRes, expRes, colorsRes] = await Promise.all([
+        api.getBalance(activeAccountId),
+        api.getIncome(activeAccountId),
+        api.getIncomingTransfers(activeAccountId),
+        api.getExpenses(activeAccountId),
+        api.getCategories(),
       ]);
 
       if (balRes) {
@@ -70,8 +98,10 @@ export default function App() {
       }
 
       setIncome(incRes);
+      setIncomingTransfers(transfersRes);
       setExpenses(expRes);
 
+      setCategories(colorsRes);
       const colorMap: Record<string, string> = {};
       for (const c of colorsRes) {
         colorMap[c.name] = c.color;
@@ -82,10 +112,11 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeAccountId]);
 
-  // Fetch projection data (shared across all charts)
+  // Fetch projections for the active account
   const fetchProjections = useCallback(async () => {
+    if (!activeAccountId) return;
     setProjectionsLoading(true);
     try {
       const activeOverrides = overrides.length > 0 ? overrides : undefined;
@@ -93,43 +124,68 @@ export default function App() {
         dateRange.kind === "preset"
           ? { days: dateRange.days }
           : { startDate: dateRange.startDate, endDate: dateRange.endDate };
-      const result = await api.getProjections(range, activeOverrides);
+      const result = await api.getProjections(activeAccountId, range, activeOverrides);
       setProjections(result);
     } catch (err) {
       console.error("Failed to fetch projections:", err);
     } finally {
       setProjectionsLoading(false);
     }
-  }, [dateRange, overrides, refreshKey]);
+  }, [activeAccountId, dateRange, overrides, refreshKey]);
 
   useEffect(() => {
-    fetchAll();
-  }, [fetchAll]);
+    if (activeAccountId) {
+      setOverrides([]);
+      fetchAll();
+    }
+  }, [activeAccountId, fetchAll]);
 
   useEffect(() => {
     fetchProjections();
   }, [fetchProjections]);
 
+  function handleAccountChange(id: string) {
+    setActiveAccountId(id);
+    localStorage.setItem("activeAccountId", id);
+  }
+
   async function handleSaveBalance(amount: number) {
-    await api.setBalance(amount);
+    if (!activeAccountId) return;
+    await api.setBalance(activeAccountId, amount);
     setBalance(amount);
     setShowBalanceModal(false);
     refresh();
   }
 
   function handleIncomeRefresh() {
-    api.getIncome().then(setIncome).catch(console.error);
+    if (!activeAccountId) return;
+    api.getIncome(activeAccountId).then(setIncome).catch(console.error);
     refresh();
   }
 
   function handleExpenseRefresh() {
-    api.getExpenses().then(setExpenses).catch(console.error);
+    if (!activeAccountId) return;
+    api.getExpenses(activeAccountId).then(setExpenses).catch(console.error);
     refresh();
   }
 
   async function handleCategoryColorChange(name: string, color: string) {
     setCategoryColors((prev) => ({ ...prev, [name]: color }));
-    await api.setCategoryColor(name, color);
+    await api.updateCategory(name, { color });
+  }
+
+  async function handleCategoriesChange() {
+    const cats = await api.getCategories();
+    setCategories(cats);
+    const colorMap: Record<string, string> = {};
+    for (const c of cats) {
+      colorMap[c.name] = c.color;
+    }
+    setCategoryColors(colorMap);
+    // Refresh expenses since category names may have changed
+    if (activeAccountId) {
+      api.getExpenses(activeAccountId).then(setExpenses).catch(console.error);
+    }
   }
 
   function handleToggleOverride(id: string, active: boolean, type: "income" | "expense") {
@@ -179,13 +235,15 @@ export default function App() {
     }
   }
 
-  if (loading) {
+  if (loading || !activeAccountId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="loading loading-spinner loading-lg" />
       </div>
     );
   }
+
+  const activeAccount = accounts.find((a) => a.id === activeAccountId);
 
   return (
     <div className="min-h-screen bg-base-200">
@@ -194,8 +252,29 @@ export default function App() {
         <div className="navbar-start">
           <h1 className="text-xl font-bold px-4">Budget Tracker</h1>
         </div>
+        <div className="navbar-center">
+          <div className="flex items-center gap-2">
+            <select
+              className="select select-bordered select-sm"
+              value={activeAccountId}
+              onChange={(e) => handleAccountChange(e.target.value)}
+            >
+              {accounts.map((acc) => (
+                <option key={acc.id} value={acc.id}>
+                  {acc.name}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn btn-ghost btn-xs"
+              onClick={() => setShowAccountModal(true)}
+            >
+              Manage
+            </button>
+          </div>
+        </div>
         <div className="navbar-end px-4 gap-2">
-          <SpreadsheetControls onImportComplete={fetchAll} />
+          <SpreadsheetControls accountId={activeAccountId} onImportComplete={fetchAll} />
           <button
             className="btn btn-ghost"
             onClick={() => setShowBalanceModal(true)}
@@ -257,22 +336,27 @@ export default function App() {
           renderChart()
         ) : (
           <LedgerView
+            projections={projections}
             dateRange={dateRange}
-            overrides={overrides}
-            refreshKey={refreshKey}
+            loading={projectionsLoading}
           />
         )}
 
         {/* Income and Expenses Columns */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <IncomeList
+            accountId={activeAccountId}
             items={income}
+            incomingTransfers={incomingTransfers}
             onRefresh={handleIncomeRefresh}
             onToggleOverride={(id, active) =>
               handleToggleOverride(id, active, "income")
             }
           />
           <ExpenseList
+            accountId={activeAccountId}
+            accounts={accounts}
+            categories={categories}
             items={expenses}
             onRefresh={handleExpenseRefresh}
             onToggleOverride={(id, active) =>
@@ -280,6 +364,7 @@ export default function App() {
             }
             categoryColors={categoryColors}
             onCategoryColorChange={handleCategoryColorChange}
+            onManageCategories={() => setShowCategoryModal(true)}
           />
         </div>
       </main>
@@ -290,6 +375,23 @@ export default function App() {
         currentBalance={balance}
         onSave={handleSaveBalance}
         onClose={() => setShowBalanceModal(false)}
+      />
+
+      {/* Account Management Modal */}
+      <AccountManageModal
+        open={showAccountModal}
+        accounts={accounts}
+        activeAccountId={activeAccountId}
+        onClose={() => setShowAccountModal(false)}
+        onAccountsChange={() => fetchAccounts()}
+        onActiveAccountChange={handleAccountChange}
+      />
+
+      <CategoryManageModal
+        open={showCategoryModal}
+        categories={categories}
+        onClose={() => setShowCategoryModal(false)}
+        onCategoriesChange={handleCategoriesChange}
       />
     </div>
   );

@@ -8,6 +8,13 @@ export enum Interval {
   YEARLY = "YEARLY",
 }
 
+export interface Account {
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface BalanceSnapshot {
   id: string;
   amount: number;
@@ -21,6 +28,17 @@ export interface IncomeSource {
   interval: Interval;
   startDate: string;
   active: boolean;
+}
+
+export interface IncomingTransfer {
+  id: string;
+  name: string;
+  amount: number;
+  interval: Interval;
+  startDate: string;
+  endDate?: string;
+  active: boolean;
+  sourceAccountName: string;
 }
 
 export interface PriceAdjustment {
@@ -40,6 +58,8 @@ export interface PlannedExpense {
   active: boolean;
   category?: string;
   isVariable: boolean;
+  isTransfer: boolean;
+  transferToAccountId?: string;
   priceAdjustments: PriceAdjustment[];
 }
 
@@ -53,6 +73,7 @@ export interface ProjectionEvent {
 export interface CategoryColor {
   name: string;
   color: string;
+  description: string;
 }
 
 export interface ProjectionDay {

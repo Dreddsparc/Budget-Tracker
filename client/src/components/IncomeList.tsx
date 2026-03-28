@@ -1,5 +1,5 @@
-import { useState } from "react";
-import type { IncomeSource } from "../types";
+import { useState, useMemo } from "react";
+import type { IncomeSource, IncomingTransfer } from "../types";
 import * as api from "../api";
 import EntryForm from "./EntryForm";
 
@@ -16,34 +16,51 @@ function intervalLabel(interval: string): string {
 }
 
 interface Props {
+  accountId: string;
   items: IncomeSource[];
+  incomingTransfers: IncomingTransfer[];
   onRefresh: () => void;
   onToggleOverride: (id: string, active: boolean) => void;
 }
 
-export default function IncomeList({ items, onRefresh, onToggleOverride }: Props) {
+export default function IncomeList({ accountId, items, incomingTransfers, onRefresh, onToggleOverride }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  // Group transfers by source account
+  const transferGroups = useMemo(() => {
+    const groups = new Map<string, IncomingTransfer[]>();
+    for (const t of incomingTransfers) {
+      const key = `Transfer from ${t.sourceAccountName}`;
+      const list = groups.get(key);
+      if (list) {
+        list.push(t);
+      } else {
+        groups.set(key, [t]);
+      }
+    }
+    return [...groups.entries()];
+  }, [incomingTransfers]);
+
   async function handleAdd(data: Omit<IncomeSource, "id">) {
-    await api.createIncome(data);
+    await api.createIncome(accountId, data);
     setShowForm(false);
     onRefresh();
   }
 
   async function handleUpdate(id: string, data: Partial<IncomeSource>) {
-    await api.updateIncome(id, data);
+    await api.updateIncome(accountId, id, data);
     setEditingId(null);
     onRefresh();
   }
 
   async function handleDelete(id: string) {
-    await api.deleteIncome(id);
+    await api.deleteIncome(accountId, id);
     onRefresh();
   }
 
   async function handleToggle(item: IncomeSource) {
-    await api.toggleIncome(item.id);
+    await api.toggleIncome(accountId, item.id);
     onToggleOverride(item.id, !item.active);
     onRefresh();
   }
@@ -72,13 +89,14 @@ export default function IncomeList({ items, onRefresh, onToggleOverride }: Props
           />
         )}
 
-        {items.length === 0 && !showForm && (
+        {items.length === 0 && incomingTransfers.length === 0 && !showForm && (
           <p className="text-base-content/50 text-sm py-4 text-center">
             No income sources yet. Add one to get started.
           </p>
         )}
 
         <div className="space-y-2 mt-2">
+          {/* Regular income items */}
           {items.map((item) =>
             editingId === item.id ? (
               <EntryForm
@@ -137,6 +155,44 @@ export default function IncomeList({ items, onRefresh, onToggleOverride }: Props
               </div>
             )
           )}
+
+          {/* Incoming transfers grouped by source account */}
+          {transferGroups.map(([groupName, transfers]) => (
+            <div key={groupName} className="rounded-lg border border-info/30 overflow-hidden">
+              <div className="flex items-center gap-3 px-4 py-2 bg-info/10">
+                <span className="badge badge-sm badge-info">Transfer</span>
+                <span className="font-semibold text-sm flex-1">{groupName}</span>
+                <span className="text-success font-semibold text-sm">
+                  {formatCurrency(transfers.filter((t) => t.active).reduce((s, t) => s + t.amount, 0))}
+                </span>
+              </div>
+              <div className="space-y-1 p-2">
+                {transfers.map((t) => (
+                  <div
+                    key={t.id}
+                    className={`flex items-center gap-3 p-2 rounded-lg bg-base-200 ${
+                      !t.active ? "opacity-50" : ""
+                    }`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium truncate text-sm">{t.name}</span>
+                        <span className="badge badge-sm badge-ghost">
+                          {intervalLabel(t.interval)}
+                        </span>
+                      </div>
+                      <span className="text-success font-semibold text-sm">
+                        {formatCurrency(t.amount)}
+                      </span>
+                    </div>
+                    <span className="text-xs text-base-content/50">
+                      read-only
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

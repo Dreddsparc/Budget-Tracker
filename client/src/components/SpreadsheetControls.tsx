@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import * as api from "../api";
 
 interface Props {
+  accountId: string;
   onImportComplete: () => void;
 }
 
@@ -14,7 +15,7 @@ interface ImportResults {
   errors: string[];
 }
 
-export default function SpreadsheetControls({ onImportComplete }: Props) {
+export default function SpreadsheetControls({ accountId, onImportComplete }: Props) {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportResults | null>(null);
@@ -25,7 +26,7 @@ export default function SpreadsheetControls({ onImportComplete }: Props) {
     setExporting(true);
     setError(null);
     try {
-      const blob = await api.exportSpreadsheet();
+      const blob = await api.exportSpreadsheet(accountId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -47,7 +48,7 @@ export default function SpreadsheetControls({ onImportComplete }: Props) {
     setError(null);
     setImportResult(null);
     try {
-      const res = await api.importSpreadsheet(file);
+      const res = await api.importSpreadsheet(accountId, file);
       setImportResult(res.results as unknown as ImportResults);
       onImportComplete();
     } catch (err) {

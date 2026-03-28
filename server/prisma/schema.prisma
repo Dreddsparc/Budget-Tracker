@@ -17,11 +17,27 @@ enum Interval {
   YEARLY
 }
 
+model Account {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  balanceSnapshots  BalanceSnapshot[]
+  incomeSources     IncomeSource[]
+  plannedExpenses   PlannedExpense[]
+  incomingTransfers PlannedExpense[] @relation("TransferTarget")
+}
+
 model BalanceSnapshot {
   id        String   @id @default(uuid())
   amount    Float
   date      DateTime @default(now())
   createdAt DateTime @default(now())
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+
+  @@index([accountId])
 }
 
 model IncomeSource {
@@ -33,21 +49,33 @@ model IncomeSource {
   active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId String
+
+  @@index([accountId])
 }
 
 model PlannedExpense {
-  id               String            @id @default(uuid())
-  name             String
-  amount           Float
-  interval         Interval
-  startDate        DateTime
-  endDate          DateTime?
-  active           Boolean           @default(true)
-  category         String?
-  isVariable       Boolean           @default(false)
-  priceAdjustments PriceAdjustment[]
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
+  id                  String            @id @default(uuid())
+  name                String
+  amount              Float
+  interval            Interval
+  startDate           DateTime
+  endDate             DateTime?
+  active              Boolean           @default(true)
+  category            String?
+  isVariable          Boolean           @default(false)
+  isTransfer          Boolean           @default(false)
+  transferToAccount   Account?          @relation("TransferTarget", fields: [transferToAccountId], references: [id], onDelete: SetNull)
+  transferToAccountId String?
+  priceAdjustments    PriceAdjustment[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  account             Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId           String
+
+  @@index([accountId])
+  @@index([transferToAccountId])
 }
 
 model PriceAdjustment {
@@ -63,6 +91,7 @@ model PriceAdjustment {
 }
 
 model CategoryColor {
-  name  String @id
-  color String @default("#ef4444")
+  name        String @id
+  color       String @default("#ef4444")
+  description String @default("")
 }

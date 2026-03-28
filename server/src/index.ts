@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import accountsRoutes from "./routes/accounts";
 import balanceRoutes from "./routes/balance";
 import incomeRoutes from "./routes/income";
 import expensesRoutes from "./routes/expenses";
@@ -13,12 +14,18 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-app.use("/api/balance", balanceRoutes);
-app.use("/api/income", incomeRoutes);
-app.use("/api/expenses", expensesRoutes);
-app.use("/api/projections", projectionsRoutes);
+// Account management (global)
+app.use("/api/accounts", accountsRoutes);
+
+// Account-scoped routes
+app.use("/api/accounts/:accountId/balance", balanceRoutes);
+app.use("/api/accounts/:accountId/income", incomeRoutes);
+app.use("/api/accounts/:accountId/expenses", expensesRoutes);
+app.use("/api/accounts/:accountId/projections", projectionsRoutes);
+app.use("/api/accounts/:accountId/spreadsheet", spreadsheetRoutes);
+
+// Global routes
 app.use("/api/categories", categoriesRoutes);
-app.use("/api/spreadsheet", spreadsheetRoutes);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });

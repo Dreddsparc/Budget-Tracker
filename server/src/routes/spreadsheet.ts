@@ -4,7 +4,7 @@ import multer from "multer";
 import prisma from "../lib/prisma";
 import { Interval, IncomeSource, PlannedExpense, PriceAdjustment } from "@prisma/client";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 const VALID_INTERVALS = Object.values(Interval);
@@ -143,17 +143,28 @@ function parseBool(val: unknown): boolean {
 
 // ─── EXPORT ──────────────────────────────────────────────────────────────────
 
-router.get("/export", async (_req, res) => {
+router.get("/export", async (req, res) => {
   try {
-    const [balanceSnap, incomes, expenses, categoryColors] = await Promise.all([
-      prisma.balanceSnapshot.findFirst({ orderBy: { date: "desc" } }),
-      prisma.incomeSource.findMany({ orderBy: { name: "asc" } }),
+    const { accountId } = req.params;
+    const account = await prisma.account.findUnique({ where: { id: accountId } });
+    if (!account) {
+      res.status(404).json({ error: "Account not found" });
+      return;
+    }
+
+    const [balanceSnap, incomes, expenses, categoryColors, allAccounts] = await Promise.all([
+      prisma.balanceSnapshot.findFirst({ where: { accountId }, orderBy: { date: "desc" } }),
+      prisma.incomeSource.findMany({ where: { accountId }, orderBy: { name: "asc" } }),
       prisma.plannedExpense.findMany({
+        where: { accountId },
         include: { priceAdjustments: { orderBy: { startDate: "asc" } } },
         orderBy: { name: "asc" },
       }),
       prisma.categoryColor.findMany({ orderBy: { name: "asc" } }),
+      prisma.account.findMany({ select: { id: true, name: true } }),
     ]);
+
+    const accountNameById = new Map(allAccounts.map((a) => [a.id, a.name]));
 
     const wb = new ExcelJS.Workbook();
     wb.creator = "Budget Tracker";
@@ -302,6 +313,8 @@ router.get("/export", async (_req, res) => {
       { header: "Active", key: "active", width: 10 },
       { header: "Category", key: "category", width: 18 },
       { header: "Is Variable", key: "isVariable", width: 12 },
+      { header: "Is Transfer", key: "isTransfer", width: 12 },
+      { header: "Transfer To Account", key: "transferToAccount", width: 22 },
     ];
     applyHeaderRow(expSheet, 1, COLORS.red);
 
@@ -316,6 +329,10 @@ router.get("/export", async (_req, res) => {
         active: exp.active ? "TRUE" : "FALSE",
         category: exp.category || "",
         isVariable: exp.isVariable ? "TRUE" : "FALSE",
+        isTransfer: exp.isTransfer ? "TRUE" : "FALSE",
+        transferToAccount: exp.transferToAccountId
+          ? accountNameById.get(exp.transferToAccountId) || ""
+          : "",
       });
     });
 
@@ -327,6 +344,7 @@ router.get("/export", async (_req, res) => {
     addIntervalValidation(expSheet, "D", 2, expBlankEnd);
     addBoolValidation(expSheet, "G", 2, expBlankEnd);
     addBoolValidation(expSheet, "I", 2, expBlankEnd);
+    addBoolValidation(expSheet, "J", 2, expBlankEnd);
 
     // ═══ Price Adjustments Sheet ═════════════════════════════════════════════
 
@@ -401,7 +419,8 @@ router.get("/export", async (_req, res) => {
 
     // ═══ Send response ══════════════════════════════════════════════════════
 
-    const filename = `budget-tracker-${toDateStr(new Date())}.xlsx`;
+    const safeName = account.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+    const filename = `budget-tracker-${safeName}-${toDateStr(new Date())}.xlsx`;
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
 
@@ -417,6 +436,7 @@ router.get("/export", async (_req, res) => {
 
 router.post("/import", upload.single("file"), async (req, res) => {
   try {
+    const { accountId } = req.params;
     if (!req.file) {
       res.status(400).json({ error: "No file uploaded" });
       return;
@@ -442,7 +462,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
       const amount = Number(row.getCell(1).value);
       if (!isNaN(amount)) {
         await prisma.balanceSnapshot.create({
-          data: { amount, date: new Date() },
+          data: { amount, date: new Date(), accountId },
         });
         results.balance.updated = true;
       }
@@ -453,7 +473,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
     const incSheet = wb.getWorksheet("Income Sources");
     if (incSheet) {
       const existingIds = new Set(
-        (await prisma.incomeSource.findMany({ select: { id: true } })).map((i) => i.id)
+        (await prisma.incomeSource.findMany({ where: { accountId }, select: { id: true } })).map((i) => i.id)
       );
       const seenIds = new Set<string>();
       const incomeOps: Promise<void>[] = [];
@@ -483,7 +503,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
           return;
         }
 
-        const data = { name, amount, interval, startDate: new Date(startDate), active };
+        const data = { name, amount, interval, startDate: new Date(startDate), active, accountId };
 
         if (id && existingIds.has(id)) {
           seenIds.add(id);
@@ -499,7 +519,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
 
       const incToDelete = [...existingIds].filter((id) => !seenIds.has(id));
       if (incToDelete.length > 0) {
-        await prisma.incomeSource.deleteMany({ where: { id: { in: incToDelete } } });
+        await prisma.incomeSource.deleteMany({ where: { id: { in: incToDelete }, accountId } });
         results.income.deleted = incToDelete.length;
       }
 
@@ -511,10 +531,14 @@ router.post("/import", upload.single("file"), async (req, res) => {
     const expSheet = wb.getWorksheet("Planned Expenses");
     if (expSheet) {
       const existingIds = new Set(
-        (await prisma.plannedExpense.findMany({ select: { id: true } })).map((e) => e.id)
+        (await prisma.plannedExpense.findMany({ where: { accountId }, select: { id: true } })).map((e) => e.id)
       );
       const seenIds = new Set<string>();
       const expenseOps: Promise<void>[] = [];
+
+      // Build account name→id lookup for resolving transfer targets
+      const importAccounts = await prisma.account.findMany({ select: { id: true, name: true } });
+      const accountIdByName = new Map(importAccounts.map((a) => [a.name.toLowerCase(), a.id]));
 
       expSheet.eachRow((row, rowNum) => {
         if (rowNum === 1) return;
@@ -530,6 +554,8 @@ router.post("/import", upload.single("file"), async (req, res) => {
         const active = parseBool(row.getCell(7).value);
         const category = String(row.getCell(8).value || "").trim() || null;
         const isVariable = parseBool(row.getCell(9).value);
+        const isTransfer = parseBool(row.getCell(10).value);
+        const transferToAccountName = String(row.getCell(11).value || "").trim();
 
         if (isNaN(amount)) {
           results.errors.push(`Expense row ${rowNum}: invalid amount`);
@@ -544,6 +570,16 @@ router.post("/import", upload.single("file"), async (req, res) => {
           return;
         }
 
+        let transferToAccountId: string | null = null;
+        if (isTransfer && transferToAccountName) {
+          const resolved = accountIdByName.get(transferToAccountName.toLowerCase());
+          if (resolved) {
+            transferToAccountId = resolved;
+          } else {
+            results.errors.push(`Expense row ${rowNum}: transfer target "${transferToAccountName}" not found, importing as regular expense`);
+          }
+        }
+
         const data = {
           name,
           amount,
@@ -553,6 +589,9 @@ router.post("/import", upload.single("file"), async (req, res) => {
           active,
           category,
           isVariable,
+          isTransfer: isTransfer && transferToAccountId !== null,
+          transferToAccountId,
+          accountId,
         };
 
         if (id && existingIds.has(id)) {
@@ -569,7 +608,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
 
       const expToDelete = [...existingIds].filter((id) => !seenIds.has(id));
       if (expToDelete.length > 0) {
-        await prisma.plannedExpense.deleteMany({ where: { id: { in: expToDelete } } });
+        await prisma.plannedExpense.deleteMany({ where: { id: { in: expToDelete }, accountId } });
         results.expenses.deleted = expToDelete.length;
       }
 
@@ -582,12 +621,17 @@ router.post("/import", upload.single("file"), async (req, res) => {
     if (priceSheet) {
       // Build a name→id lookup from the current expenses
       const allExpenses = await prisma.plannedExpense.findMany({
+        where: { accountId },
         select: { id: true, name: true },
       });
       const nameToId = new Map(allExpenses.map((e) => [e.name.toLowerCase(), e.id]));
+      const accountExpenseIds = new Set(allExpenses.map((e) => e.id));
 
       const existingPaIds = new Set(
-        (await prisma.priceAdjustment.findMany({ select: { id: true } })).map((p) => p.id)
+        (await prisma.priceAdjustment.findMany({
+          where: { expenseId: { in: [...accountExpenseIds] } },
+          select: { id: true },
+        })).map((p) => p.id)
       );
       const seenPaIds = new Set<string>();
       const paOps: Promise<void>[] = [];

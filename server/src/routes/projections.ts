@@ -2,7 +2,7 @@ import { Router, Request, Response } from "express";
 import { Interval } from "@prisma/client";
 import prisma from "../lib/prisma";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 interface ProjectionEvent {
   type: "income" | "expense";
@@ -74,29 +74,28 @@ function matchesInterval(
   }
 }
 
-interface ExpenseWithAdjustments {
+interface ItemWithAdjustments {
   interval: Interval;
   startDate: Date;
-  endDate: Date | null;
+  endDate?: Date | null;
   active: boolean;
   name: string;
   amount: number;
   category: string | null;
   isVariable: boolean;
   priceAdjustments: { amount: number; startDate: Date }[];
+  sourceAccountName?: string;
 }
 
 function getEffectiveAmount(
-  expense: { amount: number; isVariable: boolean; priceAdjustments: { amount: number; startDate: Date }[] },
+  item: { amount: number; isVariable: boolean; priceAdjustments: { amount: number; startDate: Date }[] },
   currentDate: Date
 ): number {
-  if (!expense.isVariable || expense.priceAdjustments.length === 0) {
-    return expense.amount;
+  if (!item.isVariable || item.priceAdjustments.length === 0) {
+    return item.amount;
   }
-  // Find the most recent adjustment that is on or before currentDate
-  let effectiveAmount = expense.amount;
-  for (const adj of expense.priceAdjustments) {
-    // priceAdjustments are sorted by startDate asc
+  let effectiveAmount = item.amount;
+  for (const adj of item.priceAdjustments) {
     const adjDate = new Date(Date.UTC(adj.startDate.getUTCFullYear(), adj.startDate.getUTCMonth(), adj.startDate.getUTCDate()));
     const checkDate = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate()));
     if (adjDate <= checkDate) {
@@ -112,11 +111,13 @@ function applyDay(
   currentDate: Date,
   runningBalance: number,
   effectiveIncome: { interval: Interval; startDate: Date; active: boolean; name: string; amount: number }[],
-  effectiveExpenses: ExpenseWithAdjustments[]
+  effectiveExpenses: ItemWithAdjustments[],
+  incomingTransfers: ItemWithAdjustments[]
 ): { balance: number; events: ProjectionEvent[] } {
   const events: ProjectionEvent[] = [];
   let balance = runningBalance;
 
+  // Regular income
   for (const source of effectiveIncome) {
     if (!source.active) continue;
     if (matchesInterval(source.interval, source.startDate, currentDate)) {
@@ -125,6 +126,24 @@ function applyDay(
     }
   }
 
+  // Incoming transfers (from other accounts)
+  const MONTH_ABBR = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  for (const transfer of incomingTransfers) {
+    if (!transfer.active) continue;
+    if (transfer.endDate && currentDate > transfer.endDate) continue;
+    if (matchesInterval(transfer.interval, transfer.startDate, currentDate)) {
+      const amount = getEffectiveAmount(transfer, currentDate);
+      const mon = MONTH_ABBR[currentDate.getUTCMonth()];
+      const eventName = `${transfer.name}-${mon}`;
+      const categoryName = transfer.sourceAccountName
+        ? `Transfer from ${transfer.sourceAccountName}`
+        : "Transfer";
+      events.push({ type: "income", name: eventName, amount, category: categoryName });
+      balance += amount;
+    }
+  }
+
+  // Expenses
   for (const expense of effectiveExpenses) {
     if (!expense.active) continue;
     if (expense.endDate && currentDate > expense.endDate) continue;
@@ -140,10 +159,11 @@ function applyDay(
   return { balance: Math.round(balance * 100) / 100, events };
 }
 
-// GET /api/projections?startDate=2026-03-01&endDate=2026-04-30&overrides=[...]
-// Legacy support: ?days=90 still works (from today forward)
+// GET /api/accounts/:accountId/projections
 router.get("/", async (req: Request, res: Response) => {
   try {
+    const { accountId } = req.params;
+
     let overrides: Override[] = [];
     if (req.query.overrides) {
       try {
@@ -183,16 +203,31 @@ router.get("/", async (req: Request, res: Response) => {
     maxEnd.setUTCDate(maxEnd.getUTCDate() + 365 * 2);
     if (windowEnd > maxEnd) windowEnd = maxEnd;
 
-    // Fetch data
+    // Fetch account-scoped data + incoming transfers
     const latestBalance = await prisma.balanceSnapshot.findFirst({
+      where: { accountId },
       orderBy: { date: "desc" },
     });
     let runningBalance = latestBalance?.amount ?? 0;
 
-    const [incomeSources, expenses] = await Promise.all([
-      prisma.incomeSource.findMany(),
+    const [incomeSources, expenses, rawTransfers] = await Promise.all([
+      prisma.incomeSource.findMany({ where: { accountId } }),
       prisma.plannedExpense.findMany({
+        where: { accountId },
         include: { priceAdjustments: { orderBy: { startDate: "asc" } } },
+      }),
+      // Transfers FROM other accounts TO this account
+      prisma.plannedExpense.findMany({
+        where: {
+          transferToAccountId: accountId,
+          isTransfer: true,
+          active: true,
+          NOT: { accountId },
+        },
+        include: {
+          priceAdjustments: { orderBy: { startDate: "asc" } },
+          account: { select: { name: true } },
+        },
       }),
     ]);
 
@@ -206,12 +241,28 @@ router.get("/", async (req: Request, res: Response) => {
       active: overrideMap.has(e.id) ? overrideMap.get(e.id)! : e.active,
     }));
 
-    // If window starts after today, we need to simulate from today
-    // to the window start to get the correct starting balance
+    // Map incoming transfers with source account name
+    const incomingTransfers: ItemWithAdjustments[] = rawTransfers.map((t) => {
+      const srcName = (t as unknown as { account: { name: string } }).account.name;
+      return {
+        interval: t.interval,
+        startDate: t.startDate,
+        endDate: t.endDate,
+        active: t.active,
+        name: t.name,
+        amount: t.amount,
+        category: `Transfer from ${srcName}`,
+        isVariable: t.isVariable,
+        priceAdjustments: t.priceAdjustments,
+        sourceAccountName: srcName,
+      };
+    });
+
+    // If window starts after today, simulate from today to get correct starting balance
     if (windowStart > todayUTC) {
       const current = new Date(todayUTC);
       while (current < windowStart) {
-        const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses);
+        const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers);
         runningBalance = result.balance;
         current.setUTCDate(current.getUTCDate() + 1);
       }
@@ -222,7 +273,7 @@ router.get("/", async (req: Request, res: Response) => {
     const current = new Date(windowStart);
 
     while (current <= windowEnd) {
-      const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses);
+      const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers);
       runningBalance = result.balance;
 
       projections.push({

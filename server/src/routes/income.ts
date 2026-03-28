@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-// GET /api/income — list all income sources
-router.get("/", async (_req: Request, res: Response) => {
+// GET /api/accounts/:accountId/income
+router.get("/", async (req: Request, res: Response) => {
   try {
+    const { accountId } = req.params;
     const sources = await prisma.incomeSource.findMany({
+      where: { accountId },
       orderBy: { createdAt: "desc" },
     });
     res.json(sources);
@@ -16,9 +18,10 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
-// POST /api/income — create income source
+// POST /api/accounts/:accountId/income
 router.post("/", async (req: Request, res: Response) => {
   try {
+    const { accountId } = req.params;
     const { name, amount, interval, startDate } = req.body;
 
     if (!name || amount === undefined || !interval || !startDate) {
@@ -34,6 +37,7 @@ router.post("/", async (req: Request, res: Response) => {
         amount,
         interval,
         startDate: new Date(startDate),
+        accountId,
       },
     });
 
@@ -44,11 +48,19 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/income/:id — update income source
+// PUT /api/accounts/:accountId/income/:id
 router.put("/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { accountId, id } = req.params;
     const { name, amount, interval, startDate, active } = req.body;
+
+    const existing = await prisma.incomeSource.findFirst({
+      where: { id, accountId },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Income source not found" });
+      return;
+    }
 
     const data: Record<string, unknown> = {};
     if (name !== undefined) data.name = name;
@@ -69,10 +81,17 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/income/:id — delete income source
+// DELETE /api/accounts/:accountId/income/:id
 router.delete("/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { accountId, id } = req.params;
+    const existing = await prisma.incomeSource.findFirst({
+      where: { id, accountId },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Income source not found" });
+      return;
+    }
     await prisma.incomeSource.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {
@@ -81,12 +100,14 @@ router.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// PATCH /api/income/:id/toggle — toggle active status
+// PATCH /api/accounts/:accountId/income/:id/toggle
 router.patch("/:id/toggle", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { accountId, id } = req.params;
 
-    const source = await prisma.incomeSource.findUnique({ where: { id } });
+    const source = await prisma.incomeSource.findFirst({
+      where: { id, accountId },
+    });
     if (!source) {
       res.status(404).json({ error: "Income source not found" });
       return;
@@ -101,6 +122,40 @@ router.patch("/:id/toggle", async (req: Request, res: Response) => {
   } catch (error) {
     console.error("Failed to toggle income source:", error);
     res.status(500).json({ error: "Failed to toggle income source" });
+  }
+});
+
+// GET /api/accounts/:accountId/income/transfers — incoming transfers from other accounts
+router.get("/transfers", async (req: Request, res: Response) => {
+  try {
+    const { accountId } = req.params;
+    const transfers = await prisma.plannedExpense.findMany({
+      where: {
+        transferToAccountId: accountId,
+        isTransfer: true,
+        NOT: { accountId },
+      },
+      include: {
+        account: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    const mapped = transfers.map((t) => ({
+      id: t.id,
+      name: t.name,
+      amount: t.amount,
+      interval: t.interval,
+      startDate: t.startDate,
+      endDate: t.endDate,
+      active: t.active,
+      sourceAccountName: (t as unknown as { account: { name: string } }).account.name,
+    }));
+
+    res.json(mapped);
+  } catch (error) {
+    console.error("Failed to fetch incoming transfers:", error);
+    res.status(500).json({ error: "Failed to fetch incoming transfers" });
   }
 });
 

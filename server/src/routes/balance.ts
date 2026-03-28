@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-// GET /api/balance — return latest BalanceSnapshot
-router.get("/", async (_req: Request, res: Response) => {
+// GET /api/accounts/:accountId/balance
+router.get("/", async (req: Request, res: Response) => {
   try {
+    const { accountId } = req.params;
     const snapshot = await prisma.balanceSnapshot.findFirst({
+      where: { accountId },
       orderBy: { date: "desc" },
     });
 
@@ -22,9 +24,10 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
-// POST /api/balance — create new BalanceSnapshot
+// POST /api/accounts/:accountId/balance
 router.post("/", async (req: Request, res: Response) => {
   try {
+    const { accountId } = req.params;
     const { amount } = req.body;
 
     if (amount === undefined || typeof amount !== "number") {
@@ -33,7 +36,7 @@ router.post("/", async (req: Request, res: Response) => {
     }
 
     const snapshot = await prisma.balanceSnapshot.create({
-      data: { amount },
+      data: { amount, accountId },
     });
 
     res.status(201).json(snapshot);

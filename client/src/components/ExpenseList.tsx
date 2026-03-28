@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import type { PlannedExpense } from "../types";
+import type { Account, CategoryColor, PlannedExpense } from "../types";
 import * as api from "../api";
 import EntryForm from "./EntryForm";
 import PriceSchedule from "./PriceSchedule";
@@ -17,7 +17,8 @@ function intervalLabel(interval: string): string {
 }
 
 function formatDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
+  const dateOnly = dateStr.includes("T") ? dateStr.split("T")[0] : dateStr;
+  const d = new Date(dateOnly + "T00:00:00");
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
@@ -37,19 +38,27 @@ function hashColor(name: string): string {
 }
 
 interface Props {
+  accountId: string;
+  accounts: Account[];
+  categories: CategoryColor[];
   items: PlannedExpense[];
   onRefresh: () => void;
   onToggleOverride: (id: string, active: boolean) => void;
   categoryColors: Record<string, string>;
   onCategoryColorChange: (name: string, color: string) => void;
+  onManageCategories: () => void;
 }
 
 export default function ExpenseList({
+  accountId,
+  accounts,
+  categories,
   items,
   onRefresh,
   onToggleOverride,
   categoryColors,
   onCategoryColorChange,
+  onManageCategories,
 }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -59,7 +68,13 @@ export default function ExpenseList({
   const grouped = useMemo(() => {
     const map = new Map<string, PlannedExpense[]>();
     for (const item of items) {
-      const key = item.category?.trim() || UNCATEGORIZED;
+      let key: string;
+      if (item.isTransfer && item.transferToAccountId) {
+        const target = accounts.find((a) => a.id === item.transferToAccountId);
+        key = `Transfer To ${target?.name || "Unknown"}`;
+      } else {
+        key = item.category?.trim() || UNCATEGORIZED;
+      }
       const list = map.get(key);
       if (list) {
         list.push(item);
@@ -88,10 +103,14 @@ export default function ExpenseList({
     });
   }
 
+  const otherAccounts = accounts.filter((a) => a.id !== accountId);
+
   async function handleAdd(data: Record<string, unknown>) {
-    await api.createExpense({
+    await api.createExpense(accountId, {
       ...data,
       isVariable: (data.isVariable as boolean) ?? false,
+      isTransfer: (data.isTransfer as boolean) ?? false,
+      transferToAccountId: (data.transferToAccountId as string) || undefined,
       priceAdjustments: [],
     } as Omit<PlannedExpense, "id">);
     setShowForm(false);
@@ -99,18 +118,18 @@ export default function ExpenseList({
   }
 
   async function handleUpdate(id: string, data: Partial<PlannedExpense>) {
-    await api.updateExpense(id, data);
+    await api.updateExpense(accountId, id, data);
     setEditingId(null);
     onRefresh();
   }
 
   async function handleDelete(id: string) {
-    await api.deleteExpense(id);
+    await api.deleteExpense(accountId, id);
     onRefresh();
   }
 
   async function handleToggle(item: PlannedExpense) {
-    await api.toggleExpense(item.id);
+    await api.toggleExpense(accountId, item.id);
     onToggleOverride(item.id, !item.active);
     onRefresh();
   }
@@ -122,6 +141,8 @@ export default function ExpenseList({
           key={item.id}
           mode="expense"
           initial={item}
+          accounts={otherAccounts}
+          categories={categories}
           onSubmit={(data) => handleUpdate(item.id, data)}
           onCancel={() => setEditingId(null)}
         />
@@ -152,6 +173,14 @@ export default function ExpenseList({
               {item.isVariable && (
                 <span className="badge badge-sm badge-warning">
                   Variable
+                </span>
+              )}
+              {item.isTransfer && (
+                <span className="badge badge-sm badge-info">
+                  Transfer{item.transferToAccountId && (() => {
+                    const target = accounts.find((a) => a.id === item.transferToAccountId);
+                    return target ? ` → ${target.name}` : "";
+                  })()}
                 </span>
               )}
             </div>
@@ -203,7 +232,7 @@ export default function ExpenseList({
         </div>
 
         {item.isVariable && expandedScheduleId === item.id && (
-          <PriceSchedule expense={item} onRefresh={onRefresh} />
+          <PriceSchedule accountId={accountId} expense={item} onRefresh={onRefresh} />
         )}
       </div>
     );
@@ -214,20 +243,30 @@ export default function ExpenseList({
       <div className="card-body">
         <div className="flex items-center justify-between">
           <h2 className="card-title text-error">Expenses</h2>
-          <button
-            className="btn btn-sm btn-error btn-outline"
-            onClick={() => {
-              setShowForm(true);
-              setEditingId(null);
-            }}
-          >
-            + Add
-          </button>
+          <div className="flex gap-1">
+            <button
+              className="btn btn-sm btn-ghost btn-xs"
+              onClick={onManageCategories}
+            >
+              Categories
+            </button>
+            <button
+              className="btn btn-sm btn-error btn-outline"
+              onClick={() => {
+                setShowForm(true);
+                setEditingId(null);
+              }}
+            >
+              + Add
+            </button>
+          </div>
         </div>
 
         {showForm && !editingId && (
           <EntryForm
             mode="expense"
+            accounts={otherAccounts}
+            categories={categories}
             onSubmit={handleAdd}
             onCancel={() => setShowForm(false)}
           />

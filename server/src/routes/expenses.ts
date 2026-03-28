@@ -1,12 +1,14 @@
 import { Router, Request, Response } from "express";
 import prisma from "../lib/prisma";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
-// GET /api/expenses — list all planned expenses
-router.get("/", async (_req: Request, res: Response) => {
+// GET /api/accounts/:accountId/expenses
+router.get("/", async (req: Request, res: Response) => {
   try {
+    const { accountId } = req.params;
     const expenses = await prisma.plannedExpense.findMany({
+      where: { accountId },
       orderBy: { createdAt: "desc" },
       include: { priceAdjustments: { orderBy: { startDate: "asc" } } },
     });
@@ -17,16 +19,29 @@ router.get("/", async (_req: Request, res: Response) => {
   }
 });
 
-// POST /api/expenses — create planned expense
+// POST /api/accounts/:accountId/expenses
 router.post("/", async (req: Request, res: Response) => {
   try {
-    const { name, amount, interval, startDate, endDate, category, isVariable } = req.body;
+    const { accountId } = req.params;
+    const { name, amount, interval, startDate, endDate, category, isVariable, isTransfer, transferToAccountId } = req.body;
 
     if (!name || amount === undefined || !interval || !startDate) {
       res.status(400).json({
         error: "name, amount, interval, and startDate are required",
       });
       return;
+    }
+
+    if (isTransfer && transferToAccountId) {
+      if (transferToAccountId === accountId) {
+        res.status(400).json({ error: "Cannot transfer to the same account" });
+        return;
+      }
+      const targetExists = await prisma.account.findUnique({ where: { id: transferToAccountId } });
+      if (!targetExists) {
+        res.status(400).json({ error: "Transfer target account not found" });
+        return;
+      }
     }
 
     const expense = await prisma.plannedExpense.create({
@@ -38,6 +53,9 @@ router.post("/", async (req: Request, res: Response) => {
         endDate: endDate ? new Date(endDate) : null,
         category: category || null,
         isVariable: isVariable ?? false,
+        isTransfer: isTransfer ?? false,
+        transferToAccountId: isTransfer ? transferToAccountId || null : null,
+        accountId,
       },
       include: { priceAdjustments: { orderBy: { startDate: "asc" } } },
     });
@@ -49,12 +67,25 @@ router.post("/", async (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/expenses/:id — update planned expense
+// PUT /api/accounts/:accountId/expenses/:id
 router.put("/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const { name, amount, interval, startDate, endDate, category, active, isVariable } =
+    const { accountId, id } = req.params;
+    const { name, amount, interval, startDate, endDate, category, active, isVariable, isTransfer, transferToAccountId } =
       req.body;
+
+    const existing = await prisma.plannedExpense.findFirst({
+      where: { id, accountId },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Expense not found" });
+      return;
+    }
+
+    if (isTransfer && transferToAccountId && transferToAccountId === accountId) {
+      res.status(400).json({ error: "Cannot transfer to the same account" });
+      return;
+    }
 
     const data: Record<string, unknown> = {};
     if (name !== undefined) data.name = name;
@@ -65,6 +96,13 @@ router.put("/:id", async (req: Request, res: Response) => {
     if (category !== undefined) data.category = category;
     if (active !== undefined) data.active = active;
     if (isVariable !== undefined) data.isVariable = isVariable;
+    if (isTransfer !== undefined) {
+      data.isTransfer = isTransfer;
+      if (!isTransfer) {
+        data.transferToAccountId = null;
+      }
+    }
+    if (transferToAccountId !== undefined) data.transferToAccountId = transferToAccountId || null;
 
     const expense = await prisma.plannedExpense.update({
       where: { id },
@@ -79,10 +117,17 @@ router.put("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// DELETE /api/expenses/:id — delete planned expense
+// DELETE /api/accounts/:accountId/expenses/:id
 router.delete("/:id", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { accountId, id } = req.params;
+    const existing = await prisma.plannedExpense.findFirst({
+      where: { id, accountId },
+    });
+    if (!existing) {
+      res.status(404).json({ error: "Expense not found" });
+      return;
+    }
     await prisma.plannedExpense.delete({ where: { id } });
     res.status(204).send();
   } catch (error) {
@@ -91,12 +136,14 @@ router.delete("/:id", async (req: Request, res: Response) => {
   }
 });
 
-// PATCH /api/expenses/:id/toggle — toggle active status
+// PATCH /api/accounts/:accountId/expenses/:id/toggle
 router.patch("/:id/toggle", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { accountId, id } = req.params;
 
-    const expense = await prisma.plannedExpense.findUnique({ where: { id } });
+    const expense = await prisma.plannedExpense.findFirst({
+      where: { id, accountId },
+    });
     if (!expense) {
       res.status(404).json({ error: "Expense not found" });
       return;
@@ -115,12 +162,14 @@ router.patch("/:id/toggle", async (req: Request, res: Response) => {
   }
 });
 
-// GET /api/expenses/:id/prices — list price adjustments for an expense
+// GET /api/accounts/:accountId/expenses/:id/prices
 router.get("/:id/prices", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { accountId, id } = req.params;
 
-    const expense = await prisma.plannedExpense.findUnique({ where: { id } });
+    const expense = await prisma.plannedExpense.findFirst({
+      where: { id, accountId },
+    });
     if (!expense) {
       res.status(404).json({ error: "Expense not found" });
       return;
@@ -138,10 +187,10 @@ router.get("/:id/prices", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/expenses/:id/prices — add a price adjustment
+// POST /api/accounts/:accountId/expenses/:id/prices
 router.post("/:id/prices", async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const { accountId, id } = req.params;
     const { amount, startDate, note } = req.body;
 
     if (amount === undefined || !startDate) {
@@ -149,7 +198,9 @@ router.post("/:id/prices", async (req: Request, res: Response) => {
       return;
     }
 
-    const expense = await prisma.plannedExpense.findUnique({ where: { id } });
+    const expense = await prisma.plannedExpense.findFirst({
+      where: { id, accountId },
+    });
     if (!expense) {
       res.status(404).json({ error: "Expense not found" });
       return;
@@ -171,11 +222,19 @@ router.post("/:id/prices", async (req: Request, res: Response) => {
   }
 });
 
-// PUT /api/expenses/:expenseId/prices/:priceId — update a price adjustment
+// PUT /api/accounts/:accountId/expenses/:expenseId/prices/:priceId
 router.put("/:expenseId/prices/:priceId", async (req: Request, res: Response) => {
   try {
-    const { expenseId, priceId } = req.params;
+    const { accountId, expenseId, priceId } = req.params;
     const { amount, startDate, note } = req.body;
+
+    const expense = await prisma.plannedExpense.findFirst({
+      where: { id: expenseId, accountId },
+    });
+    if (!expense) {
+      res.status(404).json({ error: "Expense not found" });
+      return;
+    }
 
     const existing = await prisma.priceAdjustment.findFirst({
       where: { id: priceId, expenseId },
@@ -202,10 +261,18 @@ router.put("/:expenseId/prices/:priceId", async (req: Request, res: Response) =>
   }
 });
 
-// DELETE /api/expenses/:expenseId/prices/:priceId — delete a price adjustment
+// DELETE /api/accounts/:accountId/expenses/:expenseId/prices/:priceId
 router.delete("/:expenseId/prices/:priceId", async (req: Request, res: Response) => {
   try {
-    const { expenseId, priceId } = req.params;
+    const { accountId, expenseId, priceId } = req.params;
+
+    const expense = await prisma.plannedExpense.findFirst({
+      where: { id: expenseId, accountId },
+    });
+    if (!expense) {
+      res.status(404).json({ error: "Expense not found" });
+      return;
+    }
 
     const existing = await prisma.priceAdjustment.findFirst({
       where: { id: priceId, expenseId },
