@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Interval } from "../types";
 import type { Account, CategoryColor } from "../types";
 
@@ -43,7 +43,7 @@ function toDateInput(value?: string): string {
   return value.split("T")[0];
 }
 
-function CategoryComboBox({
+function CategoryPicker({
   value,
   onChange,
   categories,
@@ -53,76 +53,156 @@ function CategoryComboBox({
   categories: CategoryColor[];
 }) {
   const [open, setOpen] = useState(false);
-  const [filter, setFilter] = useState("");
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [search, setSearch] = useState("");
+  const [customName, setCustomName] = useState("");
 
-  const filtered = categories.filter(
-    (c) => c.name.toLowerCase().includes((filter || value).toLowerCase())
-  );
+  const searchTerm = search.toLowerCase();
+  const filtered = searchTerm
+    ? categories.filter((c) => c.name.toLowerCase().includes(searchTerm))
+    : categories;
 
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
-        setOpen(false);
-        setFilter("");
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const currentCat = categories.find((c) => c.name === value);
+  const hasExactMatch = categories.some((c) => c.name.toLowerCase() === searchTerm);
+
+  function handleSelect(name: string) {
+    onChange(name);
+    setOpen(false);
+    setSearch("");
+    setCustomName("");
+  }
+
+  function handleCreateCustom() {
+    const name = customName.trim() || search.trim();
+    if (!name) return;
+    onChange(name);
+    setOpen(false);
+    setSearch("");
+    setCustomName("");
+  }
 
   return (
-    <div className="form-control" ref={wrapperRef}>
+    <div className="form-control">
       <label className="label">
         <span className="label-text">Category (optional)</span>
       </label>
-      <div className="relative">
-        <input
-          type="text"
-          className="input input-bordered input-sm w-full"
-          value={open ? filter : value}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (open) {
-              setFilter(v);
-            }
-            onChange(v);
-          }}
-          onFocus={() => {
-            setOpen(true);
-            setFilter(value);
-          }}
-          placeholder="Type or select a category..."
-        />
-        {open && filtered.length > 0 && (
-          <ul className="absolute z-20 top-full left-0 right-0 mt-1 bg-base-300 border border-base-content/20 rounded-lg shadow-lg max-h-48 overflow-y-auto">
-            {filtered.map((cat) => (
-              <li key={cat.name}>
+      <button
+        type="button"
+        className="btn btn-sm btn-outline justify-start gap-2 font-normal"
+        onClick={() => setOpen(true)}
+      >
+        {currentCat ? (
+          <>
+            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: currentCat.color }} />
+            {currentCat.name}
+          </>
+        ) : value ? (
+          <>
+            <span className="w-3 h-3 rounded-full shrink-0 bg-base-content/30" />
+            {value}
+          </>
+        ) : (
+          <span className="text-base-content/50">Select a category...</span>
+        )}
+      </button>
+
+      {open && (
+        <dialog className="modal modal-open" onClick={(e) => { if (e.target === e.currentTarget) { setOpen(false); setSearch(""); } }}>
+          <div className="modal-box max-w-sm">
+            <h3 className="font-bold text-base mb-3">Select Category</h3>
+
+            {/* Search */}
+            <input
+              type="text"
+              className="input input-bordered input-sm w-full mb-3"
+              placeholder="Search categories..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              autoFocus
+            />
+
+            {/* Category list */}
+            <div className="space-y-1 max-h-60 overflow-y-auto mb-3">
+              {/* Clear option */}
+              <button
+                type="button"
+                className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+                  !value ? "bg-primary/10 border border-primary/30" : "hover:bg-base-200"
+                }`}
+                onClick={() => handleSelect("")}
+              >
+                <span className="w-4 h-4 rounded-full shrink-0 border-2 border-dashed border-base-content/30" />
+                <span className="text-base-content/50 italic">No category</span>
+              </button>
+
+              {filtered.map((cat) => (
                 <button
+                  key={cat.name}
                   type="button"
-                  className="flex items-center gap-2 w-full px-3 py-2 text-left text-sm hover:bg-base-200 transition-colors"
-                  onClick={() => {
-                    onChange(cat.name);
-                    setOpen(false);
-                    setFilter("");
-                  }}
+                  className={`flex items-center gap-3 w-full px-3 py-2 rounded-lg text-left text-sm transition-colors ${
+                    value === cat.name ? "bg-primary/10 border border-primary/30" : "hover:bg-base-200"
+                  }`}
+                  onClick={() => handleSelect(cat.name)}
                 >
                   <span
-                    className="w-3 h-3 rounded-full shrink-0"
+                    className="w-4 h-4 rounded-full shrink-0"
                     style={{ backgroundColor: cat.color }}
                   />
-                  <span className="font-medium">{cat.name}</span>
-                  {cat.description && (
-                    <span className="text-xs text-base-content/50 truncate">
-                      {cat.description}
-                    </span>
-                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium">{cat.name}</span>
+                    {cat.description && (
+                      <p className="text-xs text-base-content/50 truncate">{cat.description}</p>
+                    )}
+                  </div>
                 </button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+              ))}
+
+              {filtered.length === 0 && search && (
+                <p className="text-sm text-base-content/50 text-center py-3">
+                  No matching categories
+                </p>
+              )}
+            </div>
+
+            {/* Create new category inline */}
+            <div className="border-t border-base-content/10 pt-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-base-content/60 mb-2">
+                Or create a new category
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  className="input input-bordered input-sm flex-1"
+                  placeholder={search && !hasExactMatch ? search : "New category name..."}
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") { e.preventDefault(); handleCreateCustom(); }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  onClick={handleCreateCustom}
+                  disabled={!customName.trim() && !search.trim()}
+                >
+                  Use
+                </button>
+              </div>
+              {search && !hasExactMatch && !customName && (
+                <p className="text-xs text-base-content/50 mt-1">
+                  Press "Use" to create "{search}" as a new category
+                </p>
+              )}
+            </div>
+
+            <div className="modal-action">
+              <button type="button" className="btn btn-sm" onClick={() => { setOpen(false); setSearch(""); }}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </dialog>
+      )}
     </div>
   );
 }
@@ -315,7 +395,7 @@ export default function EntryForm({ mode, initial, accounts, categories, onSubmi
       )}
 
       {mode === "expense" && !isTransfer && (
-        <CategoryComboBox
+        <CategoryPicker
           value={category}
           onChange={setCategory}
           categories={categories || []}

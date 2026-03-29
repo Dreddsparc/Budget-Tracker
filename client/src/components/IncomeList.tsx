@@ -24,6 +24,7 @@ interface Props {
 }
 
 export default function IncomeList({ accountId, items, incomingTransfers, onRefresh, onToggleOverride }: Props) {
+  const [collapsed, setCollapsed] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -65,22 +66,43 @@ export default function IncomeList({ accountId, items, incomingTransfers, onRefr
     onRefresh();
   }
 
+  const totalActive = items.filter((i) => i.active).reduce((s, i) => s + i.amount, 0)
+    + incomingTransfers.filter((t) => t.active).reduce((s, t) => s + t.amount, 0);
+
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body">
         <div className="flex items-center justify-between">
-          <h2 className="card-title text-success">Income</h2>
           <button
-            className="btn btn-sm btn-success btn-outline"
-            onClick={() => {
-              setShowForm(true);
-              setEditingId(null);
-            }}
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => setCollapsed(!collapsed)}
+            aria-expanded={!collapsed}
           >
-            + Add
+            <span className="text-base-content/60 text-sm">
+              {collapsed ? "▸" : "▾"}
+            </span>
+            <h2 className="card-title text-success">Forecast Income</h2>
+            {collapsed && (
+              <span className="text-success font-semibold text-sm ml-1">
+                {formatCurrency(totalActive)}/mo
+              </span>
+            )}
           </button>
+          {!collapsed && (
+            <button
+              className="btn btn-sm btn-success btn-outline"
+              onClick={() => {
+                setShowForm(true);
+                setEditingId(null);
+              }}
+            >
+              + Add
+            </button>
+          )}
         </div>
 
+        {collapsed ? null : (
+          <>
         {showForm && !editingId && (
           <EntryForm
             mode="income"
@@ -194,6 +216,8 @@ export default function IncomeList({ accountId, items, incomingTransfers, onRefr
             </div>
           ))}
         </div>
+          </>
+        )}
       </div>
     </div>
   );

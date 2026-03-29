@@ -60,6 +60,7 @@ export default function ExpenseList({
   onCategoryColorChange,
   onManageCategories,
 }: Props) {
+  const [collapsed, setCollapsed] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expandedScheduleId, setExpandedScheduleId] = useState<string | null>(null);
@@ -238,30 +239,50 @@ export default function ExpenseList({
     );
   }
 
+  const totalActive = items.filter((i) => i.active).reduce((s, i) => s + i.amount, 0);
+
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body">
         <div className="flex items-center justify-between">
-          <h2 className="card-title text-error">Expenses</h2>
-          <div className="flex gap-1">
-            <button
-              className="btn btn-sm btn-ghost btn-xs"
-              onClick={onManageCategories}
-            >
-              Categories
-            </button>
-            <button
-              className="btn btn-sm btn-error btn-outline"
-              onClick={() => {
-                setShowForm(true);
-                setEditingId(null);
-              }}
-            >
-              + Add
-            </button>
-          </div>
+          <button
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => setCollapsed(!collapsed)}
+            aria-expanded={!collapsed}
+          >
+            <span className="text-base-content/60 text-sm">
+              {collapsed ? "▸" : "▾"}
+            </span>
+            <h2 className="card-title text-error">Forecast Expenses</h2>
+            {collapsed && (
+              <span className="text-error font-semibold text-sm ml-1">
+                {formatCurrency(totalActive)}/mo
+              </span>
+            )}
+          </button>
+          {!collapsed && (
+            <div className="flex gap-1">
+              <button
+                className="btn btn-sm btn-ghost btn-xs"
+                onClick={onManageCategories}
+              >
+                Categories
+              </button>
+              <button
+                className="btn btn-sm btn-error btn-outline"
+                onClick={() => {
+                  setShowForm(true);
+                  setEditingId(null);
+                }}
+              >
+                + Add
+              </button>
+            </div>
+          )}
         </div>
 
+        {collapsed ? null : (
+          <>
         {showForm && !editingId && (
           <EntryForm
             mode="expense"
@@ -340,6 +361,8 @@ export default function ExpenseList({
             );
           })}
         </div>
+          </>
+        )}
       </div>
     </div>
   );
