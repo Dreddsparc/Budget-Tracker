@@ -11,6 +11,7 @@ A personal finance forecasting tool that projects your bank balance day-by-day b
 - [Features](#features)
 - [Screenshots](#screenshots)
 - [Quick Start](#quick-start)
+- [Documentation](#documentation)
 - [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
 - [Makefile Reference](#makefile-reference)
@@ -106,6 +107,41 @@ make up       # start detached
 make logs     # follow the output
 make down     # stop when done
 ```
+
+---
+
+## Documentation
+
+Beyond this README, the project includes detailed documentation for both users and developers:
+
+### For Users
+
+The **[User Guide](docs/user/README.md)** covers everything you need to know to use Budget Tracker day-to-day:
+
+- [Getting Started](docs/user/getting-started.md) — First-time setup walkthrough
+- [Managing Accounts](docs/user/accounts.md) — Create, switch, rename, and delete accounts
+- [Income Sources](docs/user/income.md) — Set up recurring and one-time income
+- [Expenses](docs/user/expenses.md) — Track expenses with categories and variable pricing
+- [Transfers](docs/user/transfers.md) — Move money between accounts
+- [Charts](docs/user/charts.md) — Understand all 5 visualization types
+- [Ledger View](docs/user/ledger.md) — Transaction-level detail with filters and search
+- [Categories](docs/user/categories.md) — Organize and color-code your spending
+- [Spreadsheet Exchange](docs/user/spreadsheet.md) — Export to Excel, edit, and re-import
+- [Tips and Workflows](docs/user/tips.md) — What-if analysis, common patterns, and power-user tips
+
+### For Developers
+
+The **[Developer Guide](docs/dev/README.md)** covers the architecture, APIs, and how to extend the project:
+
+- [Architecture Overview](docs/dev/architecture.md) — System design, data flow, and tech stack
+- [Database Schema](docs/dev/database.md) — All Prisma models, relations, and migration strategy
+- [API Reference](docs/dev/api.md) — Complete REST API documentation
+- [Projection Engine](docs/dev/projections-engine.md) — The core forecasting algorithm in detail
+- [Client Architecture](docs/dev/client-architecture.md) — React component tree and state management
+- [Adding Features](docs/dev/adding-features.md) — Step-by-step guides for common extensions
+- [Spreadsheet Internals](docs/dev/spreadsheet.md) — How Excel export/import works
+- [Docker Setup](docs/dev/docker.md) — Container configuration and local development
+- [Testing](docs/dev/testing.md) — Testing strategy and recommendations
 
 ---
 
