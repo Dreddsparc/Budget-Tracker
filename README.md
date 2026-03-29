@@ -1,26 +1,89 @@
 # Budget Tracker
 
-A personal budget tracking and forecasting tool. Enter your current balance, define income sources and planned expenses with their intervals, and see a day-by-day projected balance on an interactive timeline chart. Toggle items on/off for what-if scenario analysis.
+**See where your money is going — and where it will be.**
 
-## Tech Stack
+A personal finance forecasting tool that projects your bank balance day-by-day based on your income and expenses. Manage multiple accounts, set up recurring transactions, transfer between accounts, and visualize everything with interactive charts. Built to run locally with Docker — your financial data never leaves your machine.
 
-| Layer    | Technology                              |
-|----------|-----------------------------------------|
-| Frontend | React 19, TypeScript, Tailwind CSS v4, DaisyUI v5, Recharts |
-| Backend  | Express, TypeScript, Prisma ORM         |
-| Database | PostgreSQL 16                           |
-| Infra    | Docker Compose                          |
+---
 
-## Prerequisites
+## Table of Contents
+
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Quick Start](#quick-start)
+- [Tech Stack](#tech-stack)
+- [Project Structure](#project-structure)
+- [Makefile Reference](#makefile-reference)
+- [Common Workflows](#common-workflows)
+- [Environment Variables](#environment-variables)
+- [Contributing](#contributing)
+- [License](#license)
+
+---
+
+## Features
+
+**Multi-Account Management**
+- Create and manage multiple accounts (checking, savings, etc.)
+- Set up transfers between accounts — an expense in one appears as income in the other
+- Switch between accounts instantly with the navbar dropdown
+
+**Balance Projection Engine**
+- Day-by-day balance simulation from today forward
+- Supports 7 recurrence intervals: one-time, daily, weekly, biweekly, monthly, quarterly, yearly
+- Toggle income/expenses on and off for instant what-if analysis
+- Custom date range selection with presets (30d, 60d, 90d, 6mo, 1yr)
+
+**5 Interactive Chart Views**
+- **Projection** — area chart showing your balance trajectory over time
+- **Spending by Category** — donut chart breaking down where your money goes
+- **Income vs Expenses** — monthly side-by-side bar comparison
+- **Cash Flow** — net monthly surplus/deficit with running total
+- **Expense Trends** — stacked area chart showing category spending week-over-week
+
+**Ledger View**
+- Detailed transaction-level table with daily balance tracking
+- Filter by income, expenses, or events only
+- Full-text search across all transactions
+- Summary stats: total income, total expenses, net cash flow, ending balance
+
+**Category System**
+- Organize expenses by category with custom colors and descriptions
+- Visual category picker with search when adding/editing expenses
+- Category management modal for rename, recolor, describe, or delete
+- Categories appear in charts and color-code the projection line
+
+**Spreadsheet Exchange**
+- Export all account data to a professionally formatted Excel workbook
+- Modify data in Excel and re-import to update your budget
+- Includes instructions sheet, data validation dropdowns, and color-coded tabs
+- Round-trip safe: existing records update, new rows create, removed rows delete
+
+**Variable Pricing**
+- Mark expenses as variable to track price changes over time
+- Add price adjustments with dates and notes (e.g., rent increases)
+- The projection engine uses the correct price for each date range
+
+---
+
+## Screenshots
+
+*Coming soon — run `make dev` and see for yourself!*
+
+---
+
+## Quick Start
+
+### Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose)
 - [GNU Make](https://www.gnu.org/software/make/) (pre-installed on macOS and most Linux distros)
 
-## Quick Start
+### Setup
 
 ```bash
 # 1. Clone the repository
-git clone <repo-url> && cd Budget-Tracker
+git clone https://github.com/Dreddsparc/Budget-Tracker.git && cd Budget-Tracker
 
 # 2. Create your environment file
 cp .env.example .env
@@ -29,7 +92,7 @@ cp .env.example .env
 make dev
 ```
 
-That's it. The defaults work immediately for local development. Docker Compose builds both containers, starts PostgreSQL, runs database migrations, and launches the app. Once you see output from all three services:
+That's it. Docker Compose builds both containers, starts PostgreSQL, runs database migrations, seeds a default account, and launches the app. Once you see output from all three services:
 
 - **App**: http://localhost:5173
 - **API**: http://localhost:3001
@@ -44,9 +107,74 @@ make logs     # follow the output
 make down     # stop when done
 ```
 
+---
+
+## Tech Stack
+
+| Layer    | Technology                              |
+|----------|-----------------------------------------|
+| Frontend | React 19, TypeScript, Tailwind CSS v4, DaisyUI v5, Recharts |
+| Backend  | Express, TypeScript, Prisma ORM         |
+| Database | PostgreSQL 16                           |
+| Infra    | Docker Compose                          |
+
+---
+
+## Project Structure
+
+```
+Budget-Tracker/
+├── Makefile                    # All dev commands
+├── docker-compose.yml          # Service definitions (db, server, client)
+├── .env.example                # Environment template (copy to .env)
+├── server/
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── prisma/
+│   │   ├── schema.prisma       # Data models (Account, Income, Expense, etc.)
+│   │   └── seed-accounts.ts    # Creates default account on first run
+│   └── src/
+│       ├── index.ts            # Express app + route mounting
+│       ├── lib/prisma.ts       # Database client
+│       └── routes/
+│           ├── accounts.ts     # Account CRUD
+│           ├── balance.ts      # Balance snapshots
+│           ├── income.ts       # Income sources + incoming transfers
+│           ├── expenses.ts     # Planned expenses + transfers + price adjustments
+│           ├── projections.ts  # Day-by-day balance forecast engine
+│           ├── categories.ts   # Category management (global)
+│           └── spreadsheet.ts  # Excel export/import
+└── client/
+    ├── Dockerfile
+    ├── package.json
+    ├── vite.config.ts
+    └── src/
+        ├── App.tsx             # Root state management + account switching
+        ├── api.ts              # Typed API client
+        ├── types.ts            # Shared TypeScript interfaces
+        └── components/
+            ├── ProjectionChart.tsx      # Balance area chart
+            ├── SpendingPieChart.tsx     # Category donut chart
+            ├── IncomeExpenseBarChart.tsx # Monthly comparison bars
+            ├── CashFlowChart.tsx        # Net cash flow bars
+            ├── ExpenseTrendChart.tsx    # Stacked spending trends
+            ├── LedgerView.tsx          # Transaction table
+            ├── IncomeList.tsx          # Forecast income panel
+            ├── ExpenseList.tsx         # Forecast expenses panel
+            ├── EntryForm.tsx           # Add/edit form with category picker
+            ├── PriceSchedule.tsx       # Variable price management
+            ├── SetBalanceModal.tsx      # Balance setup dialog
+            ├── AccountManageModal.tsx   # Account CRUD modal
+            ├── CategoryManageModal.tsx  # Category CRUD modal
+            ├── SpreadsheetControls.tsx  # Excel export/import buttons
+            └── DateRangeBar.tsx         # Date range presets + custom picker
+```
+
+---
+
 ## Makefile Reference
 
-Run `make help` to see all available commands. Here's the full list organized by section:
+Run `make help` to see all available commands.
 
 ### Getting Started
 
@@ -114,6 +242,8 @@ Run `make help` to see all available commands. Here's the full list organized by
 | `make clean-volumes` | Same as clean + delete database volume (destroys data)   |
 | `make clean-all`     | Full reset: containers, volumes, images, and node_modules|
 
+---
+
 ## Common Workflows
 
 ### Starting fresh after pulling changes
@@ -153,41 +283,7 @@ SELECT * FROM "PlannedExpense";
 \q                           -- exit
 ```
 
-## Project Structure
-
-```
-Budget-Tracker/
-├── Makefile                    # All dev commands
-├── docker-compose.yml          # Service definitions (db, server, client)
-├── .env.example                # Environment template (copy to .env)
-├── server/
-│   ├── Dockerfile
-│   ├── package.json
-│   ├── prisma/
-│   │   └── schema.prisma       # Data model
-│   └── src/
-│       ├── index.ts            # Express app setup
-│       ├── lib/prisma.ts       # Database client
-│       └── routes/
-│           ├── balance.ts      # GET/POST current balance
-│           ├── income.ts       # CRUD income sources
-│           ├── expenses.ts     # CRUD planned expenses
-│           └── projections.ts  # Balance forecast engine
-└── client/
-    ├── Dockerfile
-    ├── package.json
-    ├── vite.config.ts
-    └── src/
-        ├── App.tsx             # Main dashboard layout
-        ├── api.ts              # API client
-        ├── types.ts            # Shared TypeScript types
-        └── components/
-            ├── ProjectionChart.tsx   # Timeline graph (Recharts)
-            ├── IncomeList.tsx        # Income management
-            ├── ExpenseList.tsx       # Expense management
-            ├── EntryForm.tsx         # Add/edit form
-            └── SetBalanceModal.tsx   # Balance setup dialog
-```
+---
 
 ## Environment Variables
 
@@ -205,3 +301,15 @@ The defaults work out of the box for local development. **For any shared or prod
 | `POSTGRES_USER`     | `budget`                                         | PostgreSQL username    |
 | `POSTGRES_PASSWORD` | `budget`                                         | PostgreSQL password    |
 | `POSTGRES_DB`       | `budget_tracker`                                 | PostgreSQL database name |
+
+---
+
+## Contributing
+
+Contributions are welcome! Please open an issue to discuss what you'd like to change before submitting a pull request.
+
+---
+
+## License
+
+This project is open source. See the repository for license details.
