@@ -52,6 +52,7 @@ export default function LedgerView({ projections, dateRange, loading }: Props) {
       type: "income" | "expense" | "balance";
       amount: number;
       balance: number;
+      isActual?: boolean;
     }[] = [];
 
     for (const day of projections) {
@@ -85,6 +86,7 @@ export default function LedgerView({ projections, dateRange, loading }: Props) {
             type: event.type,
             amount: event.amount,
             balance: day.balance,
+            isActual: event.isActual,
           });
         }
       }
@@ -240,10 +242,11 @@ export default function LedgerView({ projections, dateRange, loading }: Props) {
                         <span className="flex items-center gap-1.5">
                           <span
                             className={`w-1.5 h-1.5 rounded-full inline-block ${
-                              row.type === "income" ? "bg-success" : "bg-error"
+                              row.isActual ? "bg-warning" : row.type === "income" ? "bg-success" : "bg-error"
                             }`}
                           />
                           {row.name}
+                          {row.isActual && <span className="badge badge-xs badge-warning ml-1">actual</span>}
                         </span>
                       )}
                     </td>

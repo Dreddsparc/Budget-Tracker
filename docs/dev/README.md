@@ -15,7 +15,7 @@ Open <http://localhost:5173> for the client. The API is available at <http://loc
 | Guide | Description |
 |-------|-------------|
 | [Architecture](architecture.md) | System overview: monorepo structure, Docker setup, how client/server/database interact, data flow |
-| [Database](database.md) | Prisma schema reference: all 6 models, fields, relations, constraints, indexes, migration strategy, seed script |
+| [Database](database.md) | Prisma schema reference: all 7 models, fields, relations, constraints, indexes, migration strategy, seed script |
 | [API Reference](api.md) | Complete REST API: every endpoint with method, path, request body, response shape, and error codes |
 | [Projections Engine](projections-engine.md) | Deep dive into the balance forecasting algorithm: interval matching, variable pricing, transfers, overrides |
 | [Client Architecture](client-architecture.md) | React component tree, state management, data flow, how projections feed charts and the ledger |
@@ -40,7 +40,7 @@ Budget-Tracker/
     src/
       index.ts             # Express app, route mounting
       lib/prisma.ts        # Singleton Prisma client
-      routes/              # Route modules (accounts, balance, income, expenses, projections, categories, spreadsheet)
+      routes/              # Route modules (accounts, balance, income, expenses, actuals, projections, categories, spreadsheet)
     prisma/
       schema.prisma        # Database schema
       seed-accounts.ts     # Seed script for default account
@@ -56,6 +56,7 @@ Budget-Tracker/
 - **Projections**: The core feature. A day-by-day balance simulation from today forward, applying income and expense events at their configured intervals.
 - **Transfers**: Expenses marked as transfers appear as income in the target account's projections.
 - **Overrides**: Client-side toggles that temporarily enable/disable income or expense items for what-if analysis. Not persisted to the database.
+- **Actual Spending**: Recorded real-world transactions that can optionally link to a forecast expense. When linked, actuals replace the forecast entry in projections for that day, preventing double-counting.
 - **Variable Expenses**: Expenses whose effective amount can change over time via `PriceAdjustment` records.
 - **Categories**: User-defined labels for expenses, with associated colors for chart rendering. Auto-discovered from expense data.
 

@@ -63,11 +63,25 @@ export interface PlannedExpense {
   priceAdjustments: PriceAdjustment[];
 }
 
+export interface ActualSpend {
+  id: string;
+  date: string;
+  amount: number;
+  note?: string;
+  category?: string;
+  forecastExpenseId?: string;
+  forecastExpense?: { id: string; name: string; category?: string };
+  accountId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ProjectionEvent {
   name: string;
   amount: number;
   type: "income" | "expense";
   category?: string;
+  isActual?: boolean;
 }
 
 export interface CategoryColor {

@@ -26,7 +26,7 @@ The ledger table has five columns:
 | Column | Description |
 |--------|-------------|
 | **Date** | The date of the transaction. Shown only on the first row of each day to reduce visual clutter. |
-| **Description** | The name of the income or expense event. A small colored dot appears next to the name -- green for income, red for expense. |
+| **Description** | The name of the income or expense event. A small colored dot appears next to the name -- green for income, red for expense. Actual spending entries have an amber dot and an "actual" badge next to the description, distinguishing them from forecasted transactions. See [Actual Spending](actual-spending.md) for details. |
 | **Income** | The dollar amount, shown only for income transactions (in green). |
 | **Expense** | The dollar amount, shown only for expense transactions (in red). |
 | **Balance** | The running projected balance as of that day. Green if positive, red if negative. |

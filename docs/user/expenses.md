@@ -100,9 +100,15 @@ This is useful for:
 - Loan payments with a known payoff date
 - Temporary expenses like a rental while traveling
 
+## Linking to Actual Spending
+
+Expenses can be linked to actual spending entries. When you record a real transaction in the Actual Spending panel and select a forecast expense from the dropdown, that actual amount replaces the forecast amount in the projection for that day. This lets your chart reflect what you really spent instead of what you planned to spend. See [Actual Spending](actual-spending.md) for full details.
+
 ## Collapsible Panel
 
 The Forecast Expenses panel works the same way as the income panel:
 
 - Click the title ("Forecast Expenses") to collapse or expand.
-- When collapsed, the panel shows the total of all active expenses per month.
+- When collapsed, the panel shows the total of all active expenses for the current calendar month (labeled "this month"). This total reflects how many times each expense actually fires during the month based on its interval and start date, rather than simply summing the per-occurrence amounts.
+
+For example, a $30/week expense that fires four times in the current month displays as approximately $120, not $30.

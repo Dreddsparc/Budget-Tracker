@@ -23,6 +23,7 @@ The top-level entity. All financial data (balances, income, expenses) is scoped 
 | `incomeSources` | `IncomeSource[]` | Income sources owned by this account |
 | `plannedExpenses` | `PlannedExpense[]` | Expenses owned by this account |
 | `incomingTransfers` | `PlannedExpense[]` | Expenses from *other* accounts that transfer money *to* this account (named relation `"TransferTarget"`) |
+| `actualSpends` | `ActualSpend[]` | Actual spending records for this account |
 
 The `incomingTransfers` relation is the inverse side of `PlannedExpense.transferToAccount`. This allows querying "which expenses from other accounts send money to me?" -- used by the projections engine and the income transfers endpoint.
 
@@ -81,6 +82,7 @@ A recurring or one-time expense. Can also represent a transfer between accounts.
 
 **Relations:**
 - `priceAdjustments`: `PriceAdjustment[]` -- variable pricing schedule
+- `actualSpends`: `ActualSpend[]` -- actual spending records linked to this forecast expense
 - `transferToAccount`: `Account?` -- target account (named relation `"TransferTarget"`)
 - `account`: `Account` -- owning account
 
@@ -115,6 +117,32 @@ Stores display colors for expense categories. The primary key is the category na
 
 This model has no relations. Categories are linked to expenses through the `PlannedExpense.category` string field, not through a foreign key. This is a deliberate denormalization -- expenses store the category name directly.
 
+### ActualSpend
+
+A recorded real-world transaction. Can optionally link to a `PlannedExpense` to indicate that the actual spend covers (replaces) a forecast entry in projections.
+
+| Field | Type | Attributes | Description |
+|-------|------|-----------|-------------|
+| `id` | `String` | `@id @default(uuid())` | UUID primary key |
+| `date` | `DateTime` | | Date the spend occurred |
+| `amount` | `Float` | | Actual amount spent |
+| `note` | `String?` | | Optional description |
+| `category` | `String?` | | Optional category label |
+| `forecastExpenseId` | `String?` | FK to `PlannedExpense`, `onDelete: SetNull` | Linked forecast expense (if any) |
+| `accountId` | `String` | FK to `Account`, `onDelete: Cascade` | Owning account |
+| `createdAt` | `DateTime` | `@default(now())` | Record creation timestamp |
+| `updatedAt` | `DateTime` | `@updatedAt` | Last modification timestamp |
+
+**Relations:**
+- `forecastExpense`: `PlannedExpense?` -- the planned expense this actual covers
+- `account`: `Account` -- owning account
+
+**Indexes:** `@@index([accountId])`, `@@index([accountId, date])`, `@@index([forecastExpenseId])`
+
+**Cascade behavior:** Deleting the account cascades to all its actual spends. Deleting the linked forecast expense sets `forecastExpenseId` to null (`onDelete: SetNull`), preserving the actual spend record.
+
+**Category inheritance:** When creating an actual spend with a `forecastExpenseId` but no explicit `category`, the API auto-inherits the category from the linked forecast expense.
+
 ## Interval Enum
 
 ```prisma
@@ -138,8 +166,10 @@ Account (1) ---< (many) BalanceSnapshot
 Account (1) ---< (many) IncomeSource
 Account (1) ---< (many) PlannedExpense        (via accountId)
 Account (1) ---< (many) PlannedExpense        (via transferToAccountId, "TransferTarget")
+Account (1) ---< (many) ActualSpend
 
 PlannedExpense (1) ---< (many) PriceAdjustment
+PlannedExpense (1) ---< (many) ActualSpend     (via forecastExpenseId, optional)
 
 CategoryColor (standalone, linked by name string to PlannedExpense.category)
 ```
@@ -153,6 +183,8 @@ CategoryColor (standalone, linked by name string to PlannedExpense.category)
 | Account -> PlannedExpense (accountId) | Cascade |
 | Account -> PlannedExpense (transferToAccountId) | SetNull (transfer target cleared, expense preserved) |
 | PlannedExpense -> PriceAdjustment | Cascade |
+| Account -> ActualSpend | Cascade |
+| PlannedExpense -> ActualSpend (forecastExpenseId) | SetNull (actual spend preserved, link cleared) |
 
 ## Migration Strategy
 

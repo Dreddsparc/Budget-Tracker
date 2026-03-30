@@ -72,5 +72,7 @@ To modify or remove an incoming transfer, switch to the source account and edit 
 The Forecast Income panel can be collapsed to save screen space.
 
 - Click the panel title ("Forecast Income") to collapse or expand it.
-- When collapsed, the panel shows just the title and a summary of the total active income amount per month.
+- When collapsed, the panel shows just the title and a summary of the total active income for the current calendar month (labeled "this month"). This total reflects how many times each income source actually fires during the month based on its interval and start date, rather than simply summing the per-occurrence amounts.
 - Click the title again to expand and see all income sources.
+
+For example, a biweekly paycheck of $2,000 displays as $4,000 in a month where two pay dates fall, not $2,000.

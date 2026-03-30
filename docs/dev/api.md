@@ -384,6 +384,94 @@ Delete a price adjustment.
 
 ---
 
+## Actual Spending
+
+Scoped to an account. Records real-world transactions that can optionally link to a forecast expense.
+
+**Source:** `server/src/routes/actuals.ts`
+
+### GET /api/accounts/:accountId/actuals
+
+List all actual spending records for the account, ordered by date descending. Each record includes the linked forecast expense summary (if any).
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": "uuid",
+    "date": "2026-03-20T00:00:00.000Z",
+    "amount": 45.00,
+    "note": "Grocery run",
+    "category": "Food",
+    "forecastExpenseId": "uuid-or-null",
+    "forecastExpense": {
+      "id": "uuid",
+      "name": "Groceries",
+      "category": "Food"
+    },
+    "accountId": "uuid",
+    "createdAt": "...",
+    "updatedAt": "..."
+  }
+]
+```
+
+The `forecastExpense` field is `null` when no forecast expense is linked.
+
+### POST /api/accounts/:accountId/actuals
+
+Create a new actual spending record.
+
+**Request Body:**
+```json
+{
+  "date": "2026-03-20",
+  "amount": 45.00,
+  "note": "Grocery run",
+  "category": "Food",
+  "forecastExpenseId": "uuid-or-null"
+}
+```
+
+**Required fields:** `date`, `amount`
+
+**Optional fields:** `note`, `category`, `forecastExpenseId`
+
+**Validation:**
+- If `forecastExpenseId` is provided, it must reference a `PlannedExpense` that belongs to the same account. Returns `400` if the expense does not exist or belongs to a different account.
+- If `forecastExpenseId` is provided but `category` is not, the category is auto-inherited from the linked forecast expense.
+
+**Response:** `201 Created`
+
+### PUT /api/accounts/:accountId/actuals/:id
+
+Update an actual spending record. All fields are optional -- only provided fields are updated.
+
+**Request Body (all optional):**
+```json
+{
+  "date": "2026-03-21",
+  "amount": 50.00,
+  "note": "Updated note",
+  "category": "Food",
+  "forecastExpenseId": "uuid-or-null"
+}
+```
+
+**Validation:** Returns `404` if the record does not exist or does not belong to this account. Ownership is verified via `findFirst` with both `id` and `accountId`.
+
+**Response:** `200 OK` -- Updated actual spending record.
+
+### DELETE /api/accounts/:accountId/actuals/:id
+
+Delete an actual spending record.
+
+**Validation:** Returns `404` if the record does not exist or does not belong to this account. Same ownership check as PUT.
+
+**Response:** `204 No Content`
+
+---
+
 ## Projections
 
 Scoped to an account.
@@ -422,7 +510,8 @@ Overrides temporarily change the `active` state of income or expense items for t
     "balance": 5000.00,
     "events": [
       { "type": "income", "name": "Salary", "amount": 3000.00 },
-      { "type": "expense", "name": "Rent", "amount": 1500.00, "category": "Housing" }
+      { "type": "expense", "name": "Rent", "amount": 1500.00, "category": "Housing" },
+      { "type": "expense", "name": "Grocery run", "amount": 45.00, "category": "Food", "isActual": true }
     ]
   },
   {

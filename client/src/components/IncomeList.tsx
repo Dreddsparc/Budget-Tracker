@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import type { IncomeSource, IncomingTransfer } from "../types";
+import { calcMonthlyTotal } from "../monthlyTotal";
 import * as api from "../api";
 import EntryForm from "./EntryForm";
 
@@ -66,8 +67,10 @@ export default function IncomeList({ accountId, items, incomingTransfers, onRefr
     onRefresh();
   }
 
-  const totalActive = items.filter((i) => i.active).reduce((s, i) => s + i.amount, 0)
-    + incomingTransfers.filter((t) => t.active).reduce((s, t) => s + t.amount, 0);
+  const monthlyTotal = calcMonthlyTotal([
+    ...items,
+    ...incomingTransfers,
+  ]);
 
   return (
     <div className="card bg-base-100 shadow-xl">
@@ -84,7 +87,7 @@ export default function IncomeList({ accountId, items, incomingTransfers, onRefr
             <h2 className="card-title text-success">Forecast Income</h2>
             {collapsed && (
               <span className="text-success font-semibold text-sm ml-1">
-                {formatCurrency(totalActive)}/mo
+                {formatCurrency(monthlyTotal)} this month
               </span>
             )}
           </button>

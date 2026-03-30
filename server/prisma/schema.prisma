@@ -27,6 +27,7 @@ model Account {
   incomeSources     IncomeSource[]
   plannedExpenses   PlannedExpense[]
   incomingTransfers PlannedExpense[] @relation("TransferTarget")
+  actualSpends      ActualSpend[]
 }
 
 model BalanceSnapshot {
@@ -69,6 +70,7 @@ model PlannedExpense {
   transferToAccount   Account?          @relation("TransferTarget", fields: [transferToAccountId], references: [id], onDelete: SetNull)
   transferToAccountId String?
   priceAdjustments    PriceAdjustment[]
+  actualSpends        ActualSpend[]
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   account             Account           @relation(fields: [accountId], references: [id], onDelete: Cascade)
@@ -88,6 +90,24 @@ model PriceAdjustment {
   createdAt DateTime       @default(now())
 
   @@index([expenseId])
+}
+
+model ActualSpend {
+  id                String          @id @default(uuid())
+  date              DateTime
+  amount            Float
+  note              String?
+  category          String?
+  forecastExpense   PlannedExpense? @relation(fields: [forecastExpenseId], references: [id], onDelete: SetNull)
+  forecastExpenseId String?
+  account           Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId         String
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  @@index([accountId])
+  @@index([accountId, date])
+  @@index([forecastExpenseId])
 }
 
 model CategoryColor {

@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import type { Account, CategoryColor, PlannedExpense } from "../types";
+import { calcMonthlyTotal } from "../monthlyTotal";
 import * as api from "../api";
 import EntryForm from "./EntryForm";
 import PriceSchedule from "./PriceSchedule";
@@ -239,7 +240,7 @@ export default function ExpenseList({
     );
   }
 
-  const totalActive = items.filter((i) => i.active).reduce((s, i) => s + i.amount, 0);
+  const monthlyTotal = calcMonthlyTotal(items);
 
   return (
     <div className="card bg-base-100 shadow-xl">
@@ -256,7 +257,7 @@ export default function ExpenseList({
             <h2 className="card-title text-error">Forecast Expenses</h2>
             {collapsed && (
               <span className="text-error font-semibold text-sm ml-1">
-                {formatCurrency(totalActive)}/mo
+                {formatCurrency(monthlyTotal)} this month
               </span>
             )}
           </button>

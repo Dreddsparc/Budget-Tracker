@@ -283,6 +283,8 @@ Then pass the new data to `applyDay()` and add processing logic there.
 6. Add UI components as needed.
 7. If the data should be exportable, update `server/src/routes/spreadsheet.ts` to include a new sheet.
 
+**Real-world example -- ActualSpend:** The `ActualSpend` model follows this pattern exactly. It was added as a new Prisma model with an optional foreign key to `PlannedExpense` (`forecastExpenseId`, `onDelete: SetNull`). A new route file (`server/src/routes/actuals.ts`) provides account-scoped CRUD with ownership validation and category inheritance from the linked forecast. The client gained an `ActualSpend` type, four API functions (`getActuals`, `createActual`, `updateActual`, `deleteActual`), and the `ActualSpendList` component. The projection engine was updated to fetch actuals, build an `actualsMap` by date, and skip forecast expenses that are covered by linked actuals. See [Projections Engine -- Actual Spending Integration](projections-engine.md#actual-spending-integration) for the engine changes.
+
 ## Checklist for Any Feature
 
 - [ ] Schema change applied (`make db-push`)

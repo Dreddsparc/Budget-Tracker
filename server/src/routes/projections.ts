@@ -9,6 +9,7 @@ interface ProjectionEvent {
   name: string;
   amount: number;
   category?: string;
+  isActual?: boolean;
 }
 
 interface ProjectionDay {
@@ -75,6 +76,7 @@ function matchesInterval(
 }
 
 interface ItemWithAdjustments {
+  id: string;
   interval: Interval;
   startDate: Date;
   endDate?: Date | null;
@@ -85,6 +87,13 @@ interface ItemWithAdjustments {
   isVariable: boolean;
   priceAdjustments: { amount: number; startDate: Date }[];
   sourceAccountName?: string;
+}
+
+interface ActualForDay {
+  amount: number;
+  name: string;
+  category: string | null;
+  forecastExpenseId: string | null;
 }
 
 function getEffectiveAmount(
@@ -112,7 +121,8 @@ function applyDay(
   runningBalance: number,
   effectiveIncome: { interval: Interval; startDate: Date; active: boolean; name: string; amount: number }[],
   effectiveExpenses: ItemWithAdjustments[],
-  incomingTransfers: ItemWithAdjustments[]
+  incomingTransfers: ItemWithAdjustments[],
+  actualsForDay: ActualForDay[]
 ): { balance: number; events: ProjectionEvent[] } {
   const events: ProjectionEvent[] = [];
   let balance = runningBalance;
@@ -143,11 +153,29 @@ function applyDay(
     }
   }
 
-  // Expenses
+  // Actual spends for this day — these replace linked forecast expenses
+  const coveredForecastIds = new Set<string>();
+  for (const actual of actualsForDay) {
+    if (actual.forecastExpenseId) {
+      coveredForecastIds.add(actual.forecastExpenseId);
+    }
+    const event: ProjectionEvent = {
+      type: "expense",
+      name: actual.name,
+      amount: actual.amount,
+      isActual: true,
+    };
+    if (actual.category) event.category = actual.category;
+    events.push(event);
+    balance -= actual.amount;
+  }
+
+  // Forecast expenses — skip any covered by actuals
   for (const expense of effectiveExpenses) {
     if (!expense.active) continue;
     if (expense.endDate && currentDate > expense.endDate) continue;
     if (matchesInterval(expense.interval, expense.startDate, currentDate)) {
+      if (coveredForecastIds.has(expense.id)) continue;
       const amount = getEffectiveAmount(expense, currentDate);
       const event: ProjectionEvent = { type: "expense", name: expense.name, amount };
       if (expense.category) event.category = expense.category;
@@ -203,20 +231,19 @@ router.get("/", async (req: Request, res: Response) => {
     maxEnd.setUTCDate(maxEnd.getUTCDate() + 365 * 2);
     if (windowEnd > maxEnd) windowEnd = maxEnd;
 
-    // Fetch account-scoped data + incoming transfers
+    // Fetch account-scoped data + incoming transfers + actuals
     const latestBalance = await prisma.balanceSnapshot.findFirst({
       where: { accountId },
       orderBy: { date: "desc" },
     });
     let runningBalance = latestBalance?.amount ?? 0;
 
-    const [incomeSources, expenses, rawTransfers] = await Promise.all([
+    const [incomeSources, expenses, rawTransfers, actuals] = await Promise.all([
       prisma.incomeSource.findMany({ where: { accountId } }),
       prisma.plannedExpense.findMany({
         where: { accountId },
         include: { priceAdjustments: { orderBy: { startDate: "asc" } } },
       }),
-      // Transfers FROM other accounts TO this account
       prisma.plannedExpense.findMany({
         where: {
           transferToAccountId: accountId,
@@ -229,22 +256,41 @@ router.get("/", async (req: Request, res: Response) => {
           account: { select: { name: true } },
         },
       }),
+      prisma.actualSpend.findMany({
+        where: { accountId },
+        include: { forecastExpense: { select: { id: true, name: true } } },
+      }),
     ]);
+
+    // Build actuals map: "YYYY-MM-DD" → ActualForDay[]
+    const actualsMap = new Map<string, ActualForDay[]>();
+    for (const a of actuals) {
+      const dateKey = a.date.toISOString().split("T")[0];
+      const entry: ActualForDay = {
+        amount: a.amount,
+        name: a.note || (a.forecastExpense ? a.forecastExpense.name : "Actual spend"),
+        category: a.category,
+        forecastExpenseId: a.forecastExpenseId,
+      };
+      const list = actualsMap.get(dateKey);
+      if (list) list.push(entry);
+      else actualsMap.set(dateKey, [entry]);
+    }
 
     const effectiveIncome = incomeSources.map((s) => ({
       ...s,
       active: overrideMap.has(s.id) ? overrideMap.get(s.id)! : s.active,
     }));
 
-    const effectiveExpenses = expenses.map((e) => ({
+    const effectiveExpenses: ItemWithAdjustments[] = expenses.map((e) => ({
       ...e,
       active: overrideMap.has(e.id) ? overrideMap.get(e.id)! : e.active,
     }));
 
-    // Map incoming transfers with source account name
     const incomingTransfers: ItemWithAdjustments[] = rawTransfers.map((t) => {
       const srcName = (t as unknown as { account: { name: string } }).account.name;
       return {
+        id: t.id,
         interval: t.interval,
         startDate: t.startDate,
         endDate: t.endDate,
@@ -262,7 +308,9 @@ router.get("/", async (req: Request, res: Response) => {
     if (windowStart > todayUTC) {
       const current = new Date(todayUTC);
       while (current < windowStart) {
-        const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers);
+        const dateKey = current.toISOString().split("T")[0];
+        const actualsForDay = actualsMap.get(dateKey) || [];
+        const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers, actualsForDay);
         runningBalance = result.balance;
         current.setUTCDate(current.getUTCDate() + 1);
       }
@@ -273,7 +321,9 @@ router.get("/", async (req: Request, res: Response) => {
     const current = new Date(windowStart);
 
     while (current <= windowEnd) {
-      const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers);
+      const dateKey = current.toISOString().split("T")[0];
+      const actualsForDay = actualsMap.get(dateKey) || [];
+      const result = applyDay(current, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers, actualsForDay);
       runningBalance = result.balance;
 
       projections.push({

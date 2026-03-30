@@ -1,5 +1,6 @@
 import type {
   Account,
+  ActualSpend,
   BalanceSnapshot,
   IncomeSource,
   IncomingTransfer,
@@ -187,6 +188,36 @@ export function deletePriceAdjustment(
     `/api/accounts/${accountId}/expenses/${expenseId}/prices/${priceId}`,
     { method: "DELETE" }
   );
+}
+
+// Actual Spending
+export function getActuals(accountId: string): Promise<ActualSpend[]> {
+  return request<ActualSpend[]>(`/api/accounts/${accountId}/actuals`);
+}
+
+export function createActual(
+  accountId: string,
+  data: { date: string; amount: number; note?: string; category?: string; forecastExpenseId?: string }
+): Promise<ActualSpend> {
+  return request<ActualSpend>(`/api/accounts/${accountId}/actuals`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateActual(
+  accountId: string,
+  id: string,
+  data: Partial<{ date: string; amount: number; note: string; category: string; forecastExpenseId: string }>
+): Promise<ActualSpend> {
+  return request<ActualSpend>(`/api/accounts/${accountId}/actuals/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteActual(accountId: string, id: string): Promise<void> {
+  return request<void>(`/api/accounts/${accountId}/actuals/${id}`, { method: "DELETE" });
 }
 
 // Categories (global, not account-scoped)

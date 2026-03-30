@@ -75,3 +75,4 @@ Now that you have the basics set up, here are some next steps:
 - **Try what-if scenarios**: Toggle items on and off to see how changes affect your forecast. See [Tips and Workflows](tips.md).
 - **Explore the charts**: Switch between five different chart views. See [Charts](charts.md).
 - **Browse the ledger**: See a day-by-day transaction list. See [Ledger](ledger.md).
+- **Record actual spending**: Once you start making real purchases, record them in the Actual Spending panel and link them to your forecast expenses. The projection will use your real amounts instead of estimates. See [Actual Spending](actual-spending.md).

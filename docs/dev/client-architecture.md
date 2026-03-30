@@ -39,10 +39,16 @@ App
   |     |-- IncomeList
   |     |     |-- EntryForm (inline add form)
   |     |     |-- Individual income items with toggle/edit/delete
+  |     |     |-- Monthly total (collapsed panel header, via monthlyTotal.ts)
   |     |-- ExpenseList
   |           |-- EntryForm (inline add form)
   |           |-- Individual expense items with toggle/edit/delete
   |           |-- PriceSchedule (for variable expenses)
+  |           |-- Monthly total (collapsed panel header, via monthlyTotal.ts)
+  |
+  |-- ActualSpendList (below income/expense grid)
+  |     |-- Add/edit form (date, amount, note, forecast dropdown, category)
+  |     |-- Entries grouped by date
   |
   |-- Modals
         |-- SetBalanceModal
@@ -64,6 +70,7 @@ All state lives in `App.tsx` using `useState` hooks. There is no external state 
 | `income` | `IncomeSource[]` | Income sources for the active account |
 | `incomingTransfers` | `IncomingTransfer[]` | Transfers from other accounts to this one |
 | `expenses` | `PlannedExpense[]` | Planned expenses for the active account |
+| `actuals` | `ActualSpend[]` | Actual spending records for the active account |
 | `overrides` | `Override[]` | Client-side active/inactive toggles for what-if analysis |
 | `categories` | `CategoryColor[]` | All category definitions |
 | `categoryColors` | `Record<string, string>` | Derived map of category name to hex color |
@@ -102,7 +109,7 @@ interface Override {
 1. **Mount:** `fetchAccounts()` loads all accounts.
 2. **Account selection:** Checks localStorage for `activeAccountId`. If found and valid, uses it; otherwise defaults to the first account.
 3. **Account change effect:** When `activeAccountId` changes, `fetchAll()` runs.
-4. **fetchAll:** Loads balance, income, incoming transfers, expenses, and categories in parallel via `Promise.all`.
+4. **fetchAll:** Loads balance, income, incoming transfers, expenses, actuals, and categories in parallel via `Promise.all`.
 5. **fetchProjections:** Triggered by changes to `activeAccountId`, `dateRange`, `overrides`, or `refreshKey`.
 
 ### fetchAll (lines 81-115)
@@ -113,6 +120,7 @@ Promise.all([
   api.getIncome(accountId),
   api.getIncomingTransfers(accountId),
   api.getExpenses(accountId),
+  api.getActuals(accountId),
   api.getCategories()
 ])
 ```
@@ -170,7 +178,7 @@ Renders preset duration buttons (30, 60, 90, 180, 365 days) and a custom date ra
 
 ### ProjectionChart
 
-Line chart (Recharts) showing projected balance over time. Displays the balance curve with event markers.
+Line chart (Recharts) showing projected balance over time. Displays the balance curve with event markers. In the tooltip, actual events are shown in a warning color with an "actual" badge.
 
 ### SpendingPieChart
 
@@ -178,7 +186,7 @@ Pie chart showing expense distribution by category within the projection window.
 
 ### LedgerView
 
-Table view of projection data. Shows each day's events (income and expenses) and the running balance. Receives projections as props -- it does not fetch its own data.
+Table view of projection data. Shows each day's events (income and expenses) and the running balance. Receives projections as props -- it does not fetch its own data. Actual events (where `isActual` is true) are rendered with a warning-colored dot and an "actual" badge to distinguish them from forecast entries.
 
 ### IncomeList / ExpenseList
 
@@ -186,6 +194,14 @@ CRUD lists with inline `EntryForm` for adding new items. Each item has toggle, e
 - Category assignment and color management
 - Transfer configuration (selecting target account)
 - Variable expense flag and `PriceSchedule` sub-component
+
+### ActualSpendList
+
+Collapsible card panel for managing actual spending records. Contains an add/edit form with fields for date, amount, note, a forecast expense dropdown, and category. Entries are displayed grouped by date. When the user creates, updates, or deletes an actual, the component calls `onRefresh` (which is `handleActualsRefresh` in `App.tsx`) to re-fetch actuals and trigger a projection refresh.
+
+### monthlyTotal.ts
+
+Utility module exporting `calcMonthlyTotal()`. Calculates how many times income or expense items fire in the current calendar month using client-side interval matching that mirrors the server's `matchesInterval` logic. Used by `IncomeList` and `ExpenseList` to display a monthly total in the collapsed panel header.
 
 ### SpreadsheetControls
 
@@ -212,6 +228,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 `BASE` is an empty string -- all paths are relative, relying on the Vite proxy to forward `/api` to the server.
 
+Account-scoped actual spending functions: `getActuals`, `createActual`, `updateActual`, `deleteActual`.
+
 Two functions bypass the JSON helper:
 - `exportSpreadsheet` -- returns a `Blob` for file download.
 - `importSpreadsheet` -- sends `FormData` (no JSON Content-Type header).
@@ -222,6 +240,8 @@ Two functions bypass the JSON helper:
 - Dates are `string` (ISO format) rather than `Date` objects.
 - `BalanceSnapshot` omits `accountId` and `createdAt` (not used in the UI).
 - `IncomingTransfer` is a flattened shape with `sourceAccountName` rather than a nested account relation.
+- `ActualSpend` includes the optional nested `forecastExpense` summary (`{ id, name, category }`).
+- `ProjectionEvent` includes the optional `isActual` boolean flag.
 
 ## Styling
 

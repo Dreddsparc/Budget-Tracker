@@ -20,9 +20,11 @@ Welcome to the Budget Tracker documentation. This guide covers everything you ne
 
 8. **[Categories](categories.md)** -- Creating, renaming, deleting, and color-coding expense categories.
 
-9. **[Spreadsheet Import/Export](spreadsheet.md)** -- Exporting your data to Excel, making changes, and importing updates back.
+9. **[Actual Spending](actual-spending.md)** -- Recording real transactions, linking them to forecast expenses, and tracking actual vs. planned spending.
 
-10. **[Tips and Workflows](tips.md)** -- What-if analysis, date range selection, collapsible panels, and common workflows.
+10. **[Spreadsheet Import/Export](spreadsheet.md)** -- Exporting your data to Excel, making changes, and importing updates back.
+
+11. **[Tips and Workflows](tips.md)** -- What-if analysis, date range selection, collapsible panels, and common workflows.
 
 ## Quick Overview
 
@@ -36,6 +38,7 @@ You tell it your current balance, your income sources, and your planned expenses
 - Organize expenses by category with custom colors
 - View five different chart types for different perspectives on your finances
 - Browse a day-by-day ledger of projected transactions
+- Record actual spending and link it to forecast expenses for real-vs-planned tracking
 - Run what-if scenarios by temporarily toggling items on and off
 - Export everything to a spreadsheet and import changes back
 

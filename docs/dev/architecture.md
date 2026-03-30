@@ -51,7 +51,7 @@ Budget-Tracker/
     Dockerfile
     tsconfig.json
     prisma/
-      schema.prisma        # 6 models + Interval enum
+      schema.prisma        # 7 models + Interval enum
       seed-accounts.ts     # Creates default "Primary" account
     src/
       index.ts             # Express app setup, route mounting
@@ -61,6 +61,7 @@ Budget-Tracker/
         balance.ts         # Balance snapshots
         income.ts          # Income sources + transfers
         expenses.ts        # Planned expenses + price adjustments
+        actuals.ts         # Actual spending records
         projections.ts     # Day-by-day balance simulation
         categories.ts      # Category colors management
         spreadsheet.ts     # Excel export/import
@@ -83,7 +84,7 @@ Budget-Tracker/
 
 1. `App.tsx` calls `api.getProjections(accountId, range, overrides)`.
 2. Request hits `GET /api/accounts/:accountId/projections?days=90`.
-3. `projections.ts` queries the latest balance snapshot, all income sources, all expenses (with price adjustments), and incoming transfers -- all in parallel via `Promise.all`.
+3. `projections.ts` queries the latest balance snapshot, all income sources, all expenses (with price adjustments), incoming transfers, and actual spending records -- all in parallel via `Promise.all`.
 4. The engine iterates day-by-day from `windowStart` to `windowEnd`, calling `applyDay()` for each date.
 5. The resulting `ProjectionDay[]` array is returned as JSON.
 6. `App.tsx` stores it in `projections` state, which flows as props to all chart components and `LedgerView`.
@@ -99,6 +100,7 @@ The Express app mounts route modules at specific path prefixes. All account-scop
 /api/accounts/:accountId/balance       -> balance.ts
 /api/accounts/:accountId/income        -> income.ts
 /api/accounts/:accountId/expenses      -> expenses.ts
+/api/accounts/:accountId/actuals       -> actuals.ts
 /api/accounts/:accountId/projections   -> projections.ts
 /api/accounts/:accountId/spreadsheet   -> spreadsheet.ts
 /api/categories                        -> categories.ts (global)

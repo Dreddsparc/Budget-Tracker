@@ -34,6 +34,7 @@ All charts respect the currently selected date range. See the Date Range section
 **Interacting with it:**
 
 - Hover over any point on the chart to see a tooltip with the exact date, balance, and a list of all income and expense events for that day.
+- If any actual spending entries fall on that day, they appear in amber with an "actual" badge next to the description. This distinguishes real recorded transactions from forecasted amounts. See [Actual Spending](actual-spending.md) for details on how actuals interact with the projection.
 
 ---
 

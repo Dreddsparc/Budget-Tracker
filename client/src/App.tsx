@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import type { Account, IncomeSource, IncomingTransfer, PlannedExpense, Override, DateRange, ProjectionDay, CategoryColor } from "./types";
+import type { Account, ActualSpend, IncomeSource, IncomingTransfer, PlannedExpense, Override, DateRange, ProjectionDay, CategoryColor } from "./types";
 import * as api from "./api";
 import DateRangeBar from "./components/DateRangeBar";
 import ProjectionChart from "./components/ProjectionChart";
@@ -13,6 +13,7 @@ import ExpenseList from "./components/ExpenseList";
 import SetBalanceModal from "./components/SetBalanceModal";
 import AccountManageModal from "./components/AccountManageModal";
 import CategoryManageModal from "./components/CategoryManageModal";
+import ActualSpendList from "./components/ActualSpendList";
 import SpreadsheetControls from "./components/SpreadsheetControls";
 
 type ChartType = "projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend";
@@ -44,6 +45,7 @@ export default function App() {
   const [income, setIncome] = useState<IncomeSource[]>([]);
   const [incomingTransfers, setIncomingTransfers] = useState<IncomingTransfer[]>([]);
   const [expenses, setExpenses] = useState<PlannedExpense[]>([]);
+  const [actuals, setActuals] = useState<ActualSpend[]>([]);
   const [overrides, setOverrides] = useState<Override[]>([]);
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -82,11 +84,12 @@ export default function App() {
     if (!activeAccountId) return;
     setLoading(true);
     try {
-      const [balRes, incRes, transfersRes, expRes, colorsRes] = await Promise.all([
+      const [balRes, incRes, transfersRes, expRes, actualsRes, colorsRes] = await Promise.all([
         api.getBalance(activeAccountId),
         api.getIncome(activeAccountId),
         api.getIncomingTransfers(activeAccountId),
         api.getExpenses(activeAccountId),
+        api.getActuals(activeAccountId),
         api.getCategories(),
       ]);
 
@@ -100,6 +103,7 @@ export default function App() {
       setIncome(incRes);
       setIncomingTransfers(transfersRes);
       setExpenses(expRes);
+      setActuals(actualsRes);
 
       setCategories(colorsRes);
       const colorMap: Record<string, string> = {};
@@ -166,6 +170,12 @@ export default function App() {
   function handleExpenseRefresh() {
     if (!activeAccountId) return;
     api.getExpenses(activeAccountId).then(setExpenses).catch(console.error);
+    refresh();
+  }
+
+  function handleActualsRefresh() {
+    if (!activeAccountId) return;
+    api.getActuals(activeAccountId).then(setActuals).catch(console.error);
     refresh();
   }
 
@@ -367,6 +377,15 @@ export default function App() {
             onManageCategories={() => setShowCategoryModal(true)}
           />
         </div>
+
+        {/* Actual Spending */}
+        <ActualSpendList
+          accountId={activeAccountId}
+          items={actuals}
+          expenses={expenses}
+          categories={categories}
+          onRefresh={handleActualsRefresh}
+        />
       </main>
 
       {/* Balance Modal */}

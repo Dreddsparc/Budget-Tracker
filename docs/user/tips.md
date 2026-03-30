@@ -62,7 +62,7 @@ Use the custom date range to focus on specific periods:
 
 Both the Forecast Income and Forecast Expenses panels can be collapsed by clicking their titles.
 
-- When collapsed, each panel shows its title and the total active amount per month (e.g., "$4,500.00/mo").
+- When collapsed, each panel shows its title and the total active amount for the current calendar month (e.g., "$4,500.00 this month"). This total counts how many times each item fires during the month based on its interval and start date.
 - This is useful when you want to focus on the charts or ledger without scrolling past long lists of items.
 - Click the title again to expand and see all entries.
 
@@ -122,6 +122,35 @@ See [Expenses - Variable Pricing](expenses.md#variable-pricing) for step-by-step
 1. Switch between accounts using the dropdown in the navbar.
 2. Use the **Cash Flow** chart on each account to compare monthly surpluses and deficits.
 3. Use the **Income vs Expenses** chart to see which account is healthiest.
+
+## Tracking Actual Spending vs. Forecast
+
+Once your forecast is set up, you can record actual spending as real transactions hit your bank account. This lets the projection chart reflect reality instead of estimates.
+
+### Recording Actuals as They Happen
+
+1. When you see a charge on your bank statement, open the **Actual Spending** panel (the amber panel below the income/expenses grid).
+2. Click **+ Add** and enter the date, amount, and an optional note.
+3. If the charge corresponds to a forecast expense, select it from the **Linked Forecast** dropdown. The category is inherited automatically.
+4. Click **Add** to save.
+
+### Reading the Projection with Actuals
+
+When an actual spending entry is linked to a forecast expense and falls on a day that expense would fire, the projection uses the actual amount instead of the forecast. On the chart, these entries appear in amber with an "actual" badge in the tooltip. In the ledger, they have an amber dot and badge.
+
+Future occurrences of the same forecast expense are unaffected -- they continue to use the forecast amount until you record another actual.
+
+### Spotting Over- and Under-Spending
+
+Compare actuals to their linked forecasts to identify patterns:
+
+- If your actuals are consistently higher than the forecast, consider updating the forecast amount to improve accuracy.
+- If your actuals come in lower, your projection is conservative -- your real balance will be higher than shown.
+- Unlinked actuals (one-off purchases with no forecast) still appear in the projection as standalone expenses, so nothing is missed.
+
+> **Tip:** You do not need to record every transaction as an actual. Focus on variable or unpredictable expenses where the forecast amount is an estimate. Fixed bills like rent or subscriptions that always match the forecast amount do not need actuals.
+
+See [Actual Spending](actual-spending.md) for the complete guide.
 
 ## Working with the Spreadsheet
 

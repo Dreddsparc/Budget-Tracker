@@ -23,6 +23,7 @@ interface ProjectionEvent {
   name: string;
   amount: number;
   category?: string;
+  isActual?: boolean;         // true when the event comes from an ActualSpend record
 }
 
 interface ProjectionDay {
@@ -36,6 +37,17 @@ interface Override {
   active: boolean;
 }
 ```
+
+```typescript
+interface ActualForDay {
+  amount: number;
+  name: string;
+  category: string | null;
+  forecastExpenseId: string | null;
+}
+```
+
+The `ActualForDay` interface represents a single actual spending entry for a specific date, used internally by the projection loop. See [Actual Spending Integration](#actual-spending-integration) for how these are built and consumed.
 
 ## Date Window Computation
 
@@ -147,15 +159,16 @@ On March 15, `getEffectiveAmount` returns $110. On April 1, it returns $120.
 
 ## applyDay
 
-**Signature:** `applyDay(currentDate, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers): { balance, events }`
+**Signature:** `applyDay(currentDate, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers, actualsForDay): { balance, events }`
 
-Processes all events for a single day and returns the updated balance and event list.
+Processes all events for a single day and returns the updated balance and event list. The `actualsForDay` parameter is an array of `ActualForDay` entries for the current date (may be empty).
 
 ### Processing Order
 
-1. **Regular income** -- iterates `effectiveIncome`, checks `active` and `matchesInterval`.
-2. **Incoming transfers** -- iterates `incomingTransfers`, checks `active`, `endDate`, and `matchesInterval`. Uses `getEffectiveAmount` since transfers can be variable.
-3. **Expenses** -- iterates `effectiveExpenses`, checks `active`, `endDate`, and `matchesInterval`. Uses `getEffectiveAmount`.
+1. **Actual spending** -- iterates `actualsForDay`. Each actual is emitted as an expense event with `isActual: true`. Actuals that have a `forecastExpenseId` add that ID to a `coveredForecastIds` set.
+2. **Regular income** -- iterates `effectiveIncome`, checks `active` and `matchesInterval`.
+3. **Incoming transfers** -- iterates `incomingTransfers`, checks `active`, `endDate`, and `matchesInterval`. Uses `getEffectiveAmount` since transfers can be variable.
+4. **Expenses** -- iterates `effectiveExpenses`, checks `active`, `endDate`, and `matchesInterval`. Uses `getEffectiveAmount`. **Expenses whose `id` is in `coveredForecastIds` are skipped** -- the linked actual already accounts for that spend.
 
 Income and incoming transfers add to the balance. Expenses subtract from the balance.
 
@@ -215,6 +228,54 @@ Overrides are client-side toggles that temporarily change the `active` state of 
 Overrides are not persisted. They exist only for the duration of the request.
 
 **Client usage:** The override system enables what-if analysis. The user can toggle an income source or expense off in the UI without changing the database, and the chart immediately updates to show the projected impact.
+
+## Actual Spending Integration
+
+The projection engine incorporates recorded actual spending to produce a hybrid forecast that blends real transactions with projected ones.
+
+### Data Loading
+
+In the GET handler, all `ActualSpend` records for the account are fetched alongside income, expenses, and transfers. The records are organized into an `actualsMap: Map<string, ActualForDay[]>`, keyed by date string (`YYYY-MM-DD`). Each entry contains the amount, a display name, the category, and the optional `forecastExpenseId`.
+
+### actualsMap Construction
+
+```typescript
+const actuals = await prisma.actualSpend.findMany({
+  where: { accountId },
+  include: { forecastExpense: { select: { id: true, name: true, category: true } } },
+});
+
+const actualsMap = new Map<string, ActualForDay[]>();
+for (const actual of actuals) {
+  const key = actual.date.toISOString().slice(0, 10);
+  const entry: ActualForDay = {
+    amount: actual.amount,
+    name: actual.note || actual.forecastExpense?.name || "Actual spend",
+    category: actual.category || actual.forecastExpense?.category || null,
+    forecastExpenseId: actual.forecastExpenseId,
+  };
+  // ... append to map
+}
+```
+
+The map is passed to both the pre-window simulation loop (for future-start windows) and the main projection loop.
+
+### Forecast Replacement Logic
+
+When `applyDay` processes actuals for a given date:
+
+1. Each actual is emitted as an expense event with `isActual: true` set on the `ProjectionEvent`.
+2. If the actual has a `forecastExpenseId`, that ID is added to a `coveredForecastIds: Set<string>`.
+3. During the forecast expense loop, any expense whose `id` is in `coveredForecastIds` is skipped entirely.
+
+This prevents double-counting: if you recorded a $45 grocery trip linked to a $50/week "Groceries" forecast, the $45 actual replaces the $50 forecast for that day.
+
+### Event Naming
+
+Actual events use the following name resolution order:
+1. The `note` field from the actual spend record.
+2. The `name` field from the linked forecast expense.
+3. The fallback string `"Actual spend"`.
 
 ## Edge Cases
 

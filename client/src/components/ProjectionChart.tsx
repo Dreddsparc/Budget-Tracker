@@ -88,10 +88,13 @@ function CustomTooltip({
                   }}
                 />
               )}
-              <span className={event.type === "income" ? "text-success" : "text-error"}>
+              <span className={event.isActual ? "text-warning" : event.type === "income" ? "text-success" : "text-error"}>
                 {event.type === "income" ? "+" : "-"}
                 {formatCurrency(event.amount)} {event.name}
               </span>
+              {event.isActual && (
+                <span className="badge badge-xs badge-warning">actual</span>
+              )}
             </p>
           ))}
         </div>

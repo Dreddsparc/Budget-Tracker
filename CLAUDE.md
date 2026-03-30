@@ -42,9 +42,9 @@ Monorepo with two independent npm projects (`client/` and `server/`) orchestrate
 ### Server (Express + Prisma + PostgreSQL)
 
 - Entry: `server/src/index.ts` — Express app mounting route modules under `/api/*`
-- Routes: `server/src/routes/{balance,income,expenses,projections,spreadsheet}.ts` — each exports a Router
+- Routes: `server/src/routes/{accounts,balance,income,expenses,actuals,projections,categories,spreadsheet}.ts` — each exports a Router
 - DB client: `server/src/lib/prisma.ts` — singleton Prisma instance
-- Schema: `server/prisma/schema.prisma` — 6 models: `Account`, `BalanceSnapshot`, `IncomeSource`, `PlannedExpense`, `PriceAdjustment`, `CategoryColor`
+- Schema: `server/prisma/schema.prisma` — 7 models: `Account`, `BalanceSnapshot`, `IncomeSource`, `PlannedExpense`, `PriceAdjustment`, `ActualSpend`, `CategoryColor`
 - Hot reload via `tsx watch` in Docker
 
 ### Client (React 19 + Vite + Tailwind v4 + DaisyUI v5)
@@ -62,6 +62,7 @@ Monorepo with two independent npm projects (`client/` and `server/`) orchestrate
 - **Projections engine** (`server/src/routes/projections.ts`): The core feature. Simulates day-by-day balance from today forward, applying income/expense events based on their `Interval` (ONE_TIME, DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY). Supports date-range queries and client-side toggle overrides for what-if analysis. Also includes incoming transfers from other accounts as virtual income.
 - **Transfers**: Expenses with `isTransfer: true` and `transferToAccountId` set represent money moving between accounts. They appear as expenses in the source account and income in the target account's projections.
 - **Variable expenses**: Expenses with `isVariable: true` can have `PriceAdjustment` records that change the effective amount at specific dates.
+- **Actual spending** (`server/src/routes/actuals.ts`): Records real transactions with optional links to forecast expenses. When an actual links to a forecast expense on a day it would fire, the projection engine uses the actual amount instead of the forecast. Unlinked actuals appear as additional deductions. Events marked with `isActual: true` in projections.
 - **Overrides**: Client-side only — toggles income/expenses on/off temporarily without persisting, passed as query params to the projections endpoint.
 - **Spreadsheet exchange** (`server/src/routes/spreadsheet.ts`): Export all data to a formatted Excel workbook with instructions, data validation, and color-coded sheets. Import a modified workbook to create/update/delete records. Uses `exceljs` and `multer`.
 
@@ -82,7 +83,9 @@ All data routes are scoped under `/api/accounts/:accountId/`. Categories and hea
 | `/api/accounts/:accountId/expenses/:id/toggle` | PATCH | Toggle active state |
 | `/api/accounts/:accountId/expenses/:id/prices` | GET, POST | Price adjustments for variable expenses |
 | `/api/accounts/:accountId/expenses/:id/prices/:priceId` | PUT, DELETE | Update/delete price adjustment |
-| `/api/accounts/:accountId/projections` | GET | Balance forecast (query: startDate/endDate or days, overrides) |
+| `/api/accounts/:accountId/actuals` | GET, POST | List/create actual spending records |
+| `/api/accounts/:accountId/actuals/:id` | PUT, DELETE | Update/delete actual spending record |
+| `/api/accounts/:accountId/projections` | GET | Balance forecast (integrates actuals, query: startDate/endDate or days, overrides) |
 | `/api/accounts/:accountId/spreadsheet/export` | GET | Download account data as formatted Excel workbook |
 | `/api/accounts/:accountId/spreadsheet/import` | POST | Upload modified workbook to sync account data |
 | `/api/categories` | GET | List category colors (global) |

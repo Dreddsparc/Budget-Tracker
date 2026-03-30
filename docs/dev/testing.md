@@ -140,7 +140,45 @@ describe("getEffectiveAmount", () => {
 
 **applyDay:**
 
-Test the full day simulation with mock income, expenses, and transfers. Verify balance arithmetic and event generation.
+Test the full day simulation with mock income, expenses, transfers, and actuals. Verify balance arithmetic and event generation.
+
+**Actual spending integration:**
+
+```typescript
+describe("applyDay with actuals", () => {
+  it("emits actual events with isActual flag", () => {
+    const actuals = [{ amount: 45, name: "Grocery run", category: "Food", forecastExpenseId: null }];
+    const result = applyDay(today, 1000, [], [], [], actuals);
+    expect(result.events[0].isActual).toBe(true);
+    expect(result.balance).toBe(955);
+  });
+
+  it("skips forecast expense when covered by a linked actual", () => {
+    const expenseId = "expense-uuid";
+    const actuals = [{ amount: 45, name: "Groceries", category: "Food", forecastExpenseId: expenseId }];
+    const expenses = [{ id: expenseId, name: "Groceries", amount: 50, interval: "WEEKLY", /* ... */ }];
+    const result = applyDay(today, 1000, [], expenses, [], actuals);
+    // Only the actual event should appear, not the forecast
+    expect(result.events).toHaveLength(1);
+    expect(result.events[0].isActual).toBe(true);
+    expect(result.events[0].amount).toBe(45);
+  });
+
+  it("processes unlinked actuals without affecting forecasts", () => {
+    const actuals = [{ amount: 20, name: "Coffee", category: null, forecastExpenseId: null }];
+    const expenses = [{ id: "other-uuid", name: "Groceries", amount: 50, interval: "WEEKLY", /* ... */ }];
+    const result = applyDay(today, 1000, [], expenses, [], actuals);
+    // Both actual and forecast should appear
+    expect(result.events).toHaveLength(2);
+  });
+});
+```
+
+**Edge cases to cover for actuals:**
+- Multiple actuals on the same day, some linked and some not
+- Actual linked to an inactive forecast expense
+- Actual with no note and no linked forecast (should use "Actual spend" fallback name)
+- actualsMap with dates outside the projection window (should be ignored)
 
 ### Priority 2: API Routes
 
@@ -170,14 +208,50 @@ describe("POST /api/accounts", () => {
 ```
 
 **Key API scenarios to test:**
-- CRUD for each resource (accounts, income, expenses, categories)
+- CRUD for each resource (accounts, income, expenses, actuals, categories)
 - Account scoping (cannot access another account's data)
 - Transfer validation (cannot transfer to self, target must exist)
 - Expense toggle (active flips correctly)
 - Price adjustment CRUD (expense must exist and belong to account)
+- Actual spending CRUD (see below)
 - Projection query parameter handling (days, date range, invalid overrides)
 - Category auto-discovery on GET
 - Category rename with expense migration
+
+**Actual spending API scenarios:**
+
+```typescript
+describe("actuals routes", () => {
+  it("creates an actual with required fields", async () => {
+    const res = await request(app)
+      .post(`/api/accounts/${accountId}/actuals`)
+      .send({ date: "2026-03-20", amount: 45 });
+    expect(res.status).toBe(201);
+  });
+
+  it("validates forecastExpenseId belongs to the same account", async () => {
+    const res = await request(app)
+      .post(`/api/accounts/${accountId}/actuals`)
+      .send({ date: "2026-03-20", amount: 45, forecastExpenseId: otherAccountExpenseId });
+    expect(res.status).toBe(400);
+  });
+
+  it("auto-inherits category from linked forecast expense", async () => {
+    const res = await request(app)
+      .post(`/api/accounts/${accountId}/actuals`)
+      .send({ date: "2026-03-20", amount: 45, forecastExpenseId: expenseWithCategory });
+    expect(res.status).toBe(201);
+    expect(res.body.category).toBe("Food");
+  });
+
+  it("returns 404 for update/delete of another account's actual", async () => {
+    const res = await request(app)
+      .put(`/api/accounts/${accountId}/actuals/${otherAccountActualId}`)
+      .send({ amount: 50 });
+    expect(res.status).toBe(404);
+  });
+});
+```
 
 ### Priority 3: Spreadsheet Import/Export
 

@@ -60,6 +60,13 @@ A personal finance forecasting tool that projects your bank balance day-by-day b
 - Includes instructions sheet, data validation dropdowns, and color-coded tabs
 - Round-trip safe: existing records update, new rows create, removed rows delete
 
+**Actual Spending Tracker**
+- Record real transactions as they hit your bank account
+- Link actuals to forecast expenses — the projection uses the actual amount instead of the forecast
+- Unlinked actuals appear as additional deductions
+- Visual distinction in charts and ledger (amber "actual" badges)
+- Compare what you planned to spend vs. what you actually spent
+
 **Variable Pricing**
 - Mark expenses as variable to track price changes over time
 - Add price adjustments with dates and notes (e.g., rent increases)
@@ -126,6 +133,7 @@ The **[User Guide](docs/user/README.md)** covers everything you need to know to 
 - [Charts](docs/user/charts.md) — Understand all 5 visualization types
 - [Ledger View](docs/user/ledger.md) — Transaction-level detail with filters and search
 - [Categories](docs/user/categories.md) — Organize and color-code your spending
+- [Actual Spending](docs/user/actual-spending.md) — Track real transactions vs. forecasts
 - [Spreadsheet Exchange](docs/user/spreadsheet.md) — Export to Excel, edit, and re-import
 - [Tips and Workflows](docs/user/tips.md) — What-if analysis, common patterns, and power-user tips
 
@@ -177,7 +185,8 @@ Budget-Tracker/
 │           ├── balance.ts      # Balance snapshots
 │           ├── income.ts       # Income sources + incoming transfers
 │           ├── expenses.ts     # Planned expenses + transfers + price adjustments
-│           ├── projections.ts  # Day-by-day balance forecast engine
+│           ├── actuals.ts      # Actual spending CRUD
+│           ├── projections.ts  # Day-by-day balance forecast engine (integrates actuals)
 │           ├── categories.ts   # Category management (global)
 │           └── spreadsheet.ts  # Excel export/import
 └── client/
@@ -188,6 +197,7 @@ Budget-Tracker/
         ├── App.tsx             # Root state management + account switching
         ├── api.ts              # Typed API client
         ├── types.ts            # Shared TypeScript interfaces
+        ├── monthlyTotal.ts     # Current-month total calculation utility
         └── components/
             ├── ProjectionChart.tsx      # Balance area chart
             ├── SpendingPieChart.tsx     # Category donut chart
@@ -197,6 +207,7 @@ Budget-Tracker/
             ├── LedgerView.tsx          # Transaction table
             ├── IncomeList.tsx          # Forecast income panel
             ├── ExpenseList.tsx         # Forecast expenses panel
+            ├── ActualSpendList.tsx     # Actual spending tracker panel
             ├── EntryForm.tsx           # Add/edit form with category picker
             ├── PriceSchedule.tsx       # Variable price management
             ├── SetBalanceModal.tsx      # Balance setup dialog

@@ -6,6 +6,7 @@ import incomeRoutes from "./routes/income";
 import expensesRoutes from "./routes/expenses";
 import projectionsRoutes from "./routes/projections";
 import categoriesRoutes from "./routes/categories";
+import actualsRoutes from "./routes/actuals";
 import spreadsheetRoutes from "./routes/spreadsheet";
 
 const app = express();
@@ -21,6 +22,7 @@ app.use("/api/accounts", accountsRoutes);
 app.use("/api/accounts/:accountId/balance", balanceRoutes);
 app.use("/api/accounts/:accountId/income", incomeRoutes);
 app.use("/api/accounts/:accountId/expenses", expensesRoutes);
+app.use("/api/accounts/:accountId/actuals", actualsRoutes);
 app.use("/api/accounts/:accountId/projections", projectionsRoutes);
 app.use("/api/accounts/:accountId/spreadsheet", spreadsheetRoutes);
 
