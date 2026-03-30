@@ -152,13 +152,18 @@ router.get("/export", async (req, res) => {
       return;
     }
 
-    const [balanceSnap, incomes, expenses, categoryColors, allAccounts] = await Promise.all([
+    const [balanceSnap, incomes, expenses, actualSpends, categoryColors, allAccounts] = await Promise.all([
       prisma.balanceSnapshot.findFirst({ where: { accountId }, orderBy: { date: "desc" } }),
       prisma.incomeSource.findMany({ where: { accountId }, orderBy: { name: "asc" } }),
       prisma.plannedExpense.findMany({
         where: { accountId },
         include: { priceAdjustments: { orderBy: { startDate: "asc" } } },
         orderBy: { name: "asc" },
+      }),
+      prisma.actualSpend.findMany({
+        where: { accountId },
+        include: { forecastExpense: { select: { id: true, name: true } } },
+        orderBy: { date: "desc" },
       }),
       prisma.categoryColor.findMany({ orderBy: { name: "asc" } }),
       prisma.account.findMany({ select: { id: true, name: true } }),
@@ -216,6 +221,14 @@ router.get("/export", async (req, res) => {
       ["  • Each adjustment has a start date — the new price applies from that date forward"],
       ["  • Leave the ID blank for new adjustments, keep it for existing ones"],
       [""],
+      ["ACTUAL SPENDING"],
+      ["─────────────────────────────────────────────────────"],
+      ["The Actual Spending sheet records real transactions you have made."],
+      ["  • Each entry has a date, amount, optional note, and optional category"],
+      ["  • Link an actual to a forecast expense by entering the expense name in the Linked Forecast column"],
+      ["  • When linked, the projection uses the actual amount instead of the forecast on that date"],
+      ["  • Leave the Linked Forecast column blank for unlinked (additional) spending"],
+      [""],
       ["TIPS"],
       ["─────────────────────────────────────────────────────"],
       ["  • You can sort and filter data within each sheet — the import reads all rows"],
@@ -234,7 +247,7 @@ router.get("/export", async (req, res) => {
         row.height = 32;
       } else if (line[0]?.startsWith("HOW IT WORKS") || line[0]?.startsWith("COLUMN FORMATS") ||
                  line[0]?.startsWith("ADDING CATEGORIES") || line[0]?.startsWith("PRICE ADJUSTMENTS") ||
-                 line[0]?.startsWith("TIPS")) {
+                 line[0]?.startsWith("ACTUAL SPENDING") || line[0]?.startsWith("TIPS")) {
         cell.font = { bold: true, size: 13, color: { argb: COLORS.medBlue }, name: "Calibri" };
         row.height = 24;
       } else if (line[0]?.startsWith("─")) {
@@ -381,6 +394,41 @@ router.get("/export", async (req, res) => {
     styleIdColumn(priceSheet, 3, 2, priceBlankEnd);
     formatAsCurrency(priceSheet, 4, 2, priceBlankEnd);
 
+    // ═══ Actual Spending Sheet ═══════════════════════════════════════════════
+
+    const actSheet = wb.addWorksheet("Actual Spending", {
+      properties: { tabColor: { argb: COLORS.orange } },
+    });
+    actSheet.columns = [
+      { header: "ID", key: "id", width: 10 },
+      { header: "Date", key: "date", width: 15 },
+      { header: "Amount", key: "amount", width: 15 },
+      { header: "Note", key: "note", width: 30 },
+      { header: "Category", key: "category", width: 18 },
+      { header: "Linked Forecast", key: "forecastName", width: 25 },
+      { header: "Forecast ID", key: "forecastId", width: 10 },
+    ];
+    applyHeaderRow(actSheet, 1, COLORS.orange);
+
+    actualSpends.forEach((a: { id: string; date: Date; amount: number; note: string | null; category: string | null; forecastExpenseId: string | null; forecastExpense: { id: string; name: string } | null }) => {
+      actSheet.addRow({
+        id: a.id,
+        date: toDateStr(a.date),
+        amount: a.amount,
+        note: a.note || "",
+        category: a.category || "",
+        forecastName: a.forecastExpense?.name || "",
+        forecastId: a.forecastExpenseId || "",
+      });
+    });
+
+    const actDataEnd = actSheet.rowCount;
+    const actBlankEnd = actDataEnd + 20;
+    applyDataRows(actSheet, 2, actBlankEnd, COLORS.lightOrange);
+    styleIdColumn(actSheet, 1, 2, actBlankEnd);
+    styleIdColumn(actSheet, 7, 2, actBlankEnd);
+    formatAsCurrency(actSheet, 3, 2, actBlankEnd);
+
     // ═══ Category Colors Sheet ═══════════════════════════════════════════════
 
     const catSheet = wb.addWorksheet("Category Colors", {
@@ -389,16 +437,17 @@ router.get("/export", async (req, res) => {
     catSheet.columns = [
       { header: "Category Name", key: "name", width: 25 },
       { header: "Color (hex)", key: "color", width: 18 },
+      { header: "Description", key: "description", width: 35 },
       { header: "Preview", key: "preview", width: 12 },
     ];
     applyHeaderRow(catSheet, 1, COLORS.purple);
 
-    categoryColors.forEach((cat: { name: string; color: string }) => {
+    categoryColors.forEach((cat: { name: string; color: string; description: string }) => {
       const rowNum = catSheet.rowCount + 1;
-      catSheet.addRow({ name: cat.name, color: cat.color, preview: "" });
+      catSheet.addRow({ name: cat.name, color: cat.color, description: cat.description || "", preview: "" });
       // Color preview cell
       const hex = cat.color.replace("#", "");
-      catSheet.getCell(rowNum, 3).fill = headerFill(hex);
+      catSheet.getCell(rowNum, 4).fill = headerFill(hex);
     });
 
     const catDataEnd = catSheet.rowCount;
@@ -407,7 +456,7 @@ router.get("/export", async (req, res) => {
 
     // ═══ Freeze panes & auto-filter ═════════════════════════════════════════
 
-    [incSheet, expSheet, priceSheet, catSheet].forEach((sheet) => {
+    [incSheet, expSheet, priceSheet, actSheet, catSheet].forEach((sheet) => {
       sheet.views = [{ state: "frozen", ySplit: 1 }];
       if (sheet.rowCount > 1) {
         sheet.autoFilter = {
@@ -450,6 +499,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
       income: { created: 0, updated: 0, deleted: 0 },
       expenses: { created: 0, updated: 0, deleted: 0 },
       priceAdjustments: { created: 0, updated: 0, deleted: 0 },
+      actualSpends: { created: 0, updated: 0, deleted: 0 },
       categories: { created: 0, updated: 0 },
       errors: [] as string[],
     };
@@ -460,9 +510,10 @@ router.post("/import", upload.single("file"), async (req, res) => {
     if (balSheet) {
       const row = balSheet.getRow(2);
       const amount = Number(row.getCell(1).value);
+      const balDate = parseDate(row.getCell(2).value);
       if (!isNaN(amount)) {
         await prisma.balanceSnapshot.create({
-          data: { amount, date: new Date(), accountId },
+          data: { amount, date: balDate ? new Date(balDate) : new Date(), accountId },
         });
         results.balance.updated = true;
       }
@@ -694,6 +745,79 @@ router.post("/import", upload.single("file"), async (req, res) => {
       await Promise.all(paOps);
     }
 
+    // ═══ Actual Spending ═════════════════════════════════════════════════════
+
+    const actSheetImport = wb.getWorksheet("Actual Spending");
+    if (actSheetImport) {
+      const existingActIds = new Set(
+        (await prisma.actualSpend.findMany({ where: { accountId }, select: { id: true } })).map((a) => a.id)
+      );
+      const seenActIds = new Set<string>();
+      const actOps: Promise<void>[] = [];
+
+      // Build expense name→id lookup for linking
+      const expensesForLookup = await prisma.plannedExpense.findMany({
+        where: { accountId },
+        select: { id: true, name: true },
+      });
+      const expenseIdByName = new Map(expensesForLookup.map((e) => [e.name.toLowerCase(), e.id]));
+
+      actSheetImport.eachRow((row, rowNum) => {
+        if (rowNum === 1) return;
+
+        const date = parseDate(row.getCell(2).value);
+        const amount = Number(row.getCell(3).value);
+        if (!date || isNaN(amount)) {
+          if (String(row.getCell(2).value || "").trim() || String(row.getCell(3).value || "").trim()) {
+            results.errors.push(`Actual row ${rowNum}: invalid date or amount`);
+          }
+          return;
+        }
+
+        const id = String(row.getCell(1).value || "").trim();
+        const note = String(row.getCell(4).value || "").trim() || null;
+        const category = String(row.getCell(5).value || "").trim() || null;
+        const forecastName = String(row.getCell(6).value || "").trim();
+        let forecastExpenseId = String(row.getCell(7).value || "").trim() || null;
+
+        // Resolve forecast by name if ID not provided
+        if (!forecastExpenseId && forecastName) {
+          forecastExpenseId = expenseIdByName.get(forecastName.toLowerCase()) || null;
+          if (!forecastExpenseId) {
+            results.errors.push(`Actual row ${rowNum}: forecast "${forecastName}" not found, importing as unlinked`);
+          }
+        }
+
+        const data = {
+          date: new Date(date),
+          amount,
+          note,
+          category,
+          forecastExpenseId,
+          accountId,
+        };
+
+        if (id && existingActIds.has(id)) {
+          seenActIds.add(id);
+          actOps.push(
+            prisma.actualSpend.update({ where: { id }, data }).then(() => { results.actualSpends.updated++; })
+          );
+        } else {
+          actOps.push(
+            prisma.actualSpend.create({ data }).then(() => { results.actualSpends.created++; })
+          );
+        }
+      });
+
+      const actToDelete = [...existingActIds].filter((id) => !seenActIds.has(id));
+      if (actToDelete.length > 0) {
+        await prisma.actualSpend.deleteMany({ where: { id: { in: actToDelete }, accountId } });
+        results.actualSpends.deleted = actToDelete.length;
+      }
+
+      await Promise.all(actOps);
+    }
+
     // ═══ Category Colors ═════════════════════════════════════════════════════
 
     const catSheet = wb.getWorksheet("Category Colors");
@@ -717,12 +841,13 @@ router.post("/import", upload.single("file"), async (req, res) => {
         let color = String(row.getCell(2).value || "").trim();
         if (!color) color = "#ef4444";
         if (!color.startsWith("#")) color = "#" + color;
+        const description = String(row.getCell(3).value || "").trim();
 
         catOps.push(
           prisma.categoryColor.upsert({
             where: { name },
-            create: { name, color },
-            update: { color },
+            create: { name, color, description },
+            update: { color, description },
           }).then(() => { results.categories.updated++; })
         );
       });

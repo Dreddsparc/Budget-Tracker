@@ -14,6 +14,8 @@ import SetBalanceModal from "./components/SetBalanceModal";
 import AccountManageModal from "./components/AccountManageModal";
 import CategoryManageModal from "./components/CategoryManageModal";
 import ActualSpendList from "./components/ActualSpendList";
+import HelpPanel, { HelpButton } from "./components/HelpPanel";
+import type { HelpTopic } from "./components/HelpPanel";
 import SpreadsheetControls from "./components/SpreadsheetControls";
 
 type ChartType = "projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend";
@@ -56,6 +58,8 @@ export default function App() {
   const [categories, setCategories] = useState<CategoryColor[]>([]);
   const [categoryColors, setCategoryColors] = useState<Record<string, string>>({});
   const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [showHelp, setShowHelp] = useState(false);
+  const [helpTopic, setHelpTopic] = useState<HelpTopic>("getting-started");
   const [projections, setProjections] = useState<ProjectionDay[]>([]);
   const [projectionsLoading, setProjectionsLoading] = useState(false);
 
@@ -198,6 +202,11 @@ export default function App() {
     }
   }
 
+  function openHelp(topic: HelpTopic) {
+    setHelpTopic(topic);
+    setShowHelp(true);
+  }
+
   function handleToggleOverride(id: string, active: boolean, type: "income" | "expense") {
     setOverrides((prev) => {
       const filtered = prev.filter((o) => o.id !== id);
@@ -261,6 +270,17 @@ export default function App() {
       <div className="navbar bg-base-100 shadow-lg sticky top-0 z-50">
         <div className="navbar-start">
           <h1 className="text-xl font-bold px-4">Budget Tracker</h1>
+          <button
+            className="btn btn-ghost btn-sm btn-circle"
+            onClick={() => openHelp("getting-started")}
+            aria-label="Help"
+            title="Help"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+              <circle cx="12" cy="12" r="10" />
+              <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01" />
+            </svg>
+          </button>
         </div>
         <div className="navbar-center">
           <div className="flex items-center gap-2">
@@ -322,6 +342,7 @@ export default function App() {
               >
                 Ledger
               </button>
+              <HelpButton topic={viewMode === "chart" ? "charts" : "ledger"} onClick={openHelp} />
             </div>
 
             {viewMode === "chart" && (
@@ -362,6 +383,7 @@ export default function App() {
             onToggleOverride={(id, active) =>
               handleToggleOverride(id, active, "income")
             }
+            onHelp={() => openHelp("income")}
           />
           <ExpenseList
             accountId={activeAccountId}
@@ -375,6 +397,7 @@ export default function App() {
             categoryColors={categoryColors}
             onCategoryColorChange={handleCategoryColorChange}
             onManageCategories={() => setShowCategoryModal(true)}
+            onHelp={() => openHelp("expenses")}
           />
         </div>
 
@@ -385,6 +408,7 @@ export default function App() {
           expenses={expenses}
           categories={categories}
           onRefresh={handleActualsRefresh}
+          onHelp={() => openHelp("actual-spending")}
         />
       </main>
 
@@ -411,6 +435,13 @@ export default function App() {
         categories={categories}
         onClose={() => setShowCategoryModal(false)}
         onCategoriesChange={handleCategoriesChange}
+      />
+
+      <HelpPanel
+        open={showHelp}
+        topic={helpTopic}
+        onClose={() => setShowHelp(false)}
+        onChangeTopic={setHelpTopic}
       />
     </div>
   );

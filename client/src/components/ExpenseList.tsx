@@ -48,6 +48,7 @@ interface Props {
   categoryColors: Record<string, string>;
   onCategoryColorChange: (name: string, color: string) => void;
   onManageCategories: () => void;
+  onHelp?: () => void;
 }
 
 export default function ExpenseList({
@@ -60,6 +61,7 @@ export default function ExpenseList({
   categoryColors,
   onCategoryColorChange,
   onManageCategories,
+  onHelp,
 }: Props) {
   const [collapsed, setCollapsed] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -255,6 +257,11 @@ export default function ExpenseList({
               {collapsed ? "▸" : "▾"}
             </span>
             <h2 className="card-title text-error">Forecast Expenses</h2>
+            {onHelp && (
+              <button className="btn btn-ghost btn-xs btn-circle opacity-40 hover:opacity-100" onClick={onHelp} aria-label="Help" title="Help">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+              </button>
+            )}
             {collapsed && (
               <span className="text-error font-semibold text-sm ml-1">
                 {formatCurrency(monthlyTotal)} this month

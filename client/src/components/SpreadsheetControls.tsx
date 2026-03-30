@@ -11,6 +11,7 @@ interface ImportResults {
   income: { created: number; updated: number; deleted: number };
   expenses: { created: number; updated: number; deleted: number };
   priceAdjustments: { created: number; updated: number; deleted: number };
+  actualSpends: { created: number; updated: number; deleted: number };
   categories: { created: number; updated: number };
   errors: string[];
 }
@@ -121,6 +122,7 @@ export default function SpreadsheetControls({ accountId, onImportComplete }: Pro
                 {summaryLine("Income", importResult.income)}
                 {summaryLine("Expenses", importResult.expenses)}
                 {summaryLine("Price Adj.", importResult.priceAdjustments)}
+                {summaryLine("Actuals", importResult.actualSpends)}
                 {importResult.categories.updated > 0 && (
                   <li><span className="font-medium">Categories:</span> {importResult.categories.updated} synced</li>
                 )}
