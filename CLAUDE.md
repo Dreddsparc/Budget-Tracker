@@ -18,19 +18,25 @@ make logs-client      # Tail client logs
 ### Database
 
 ```bash
-make db-migrate       # Run pending Prisma migrations (interactive)
-make db-push          # Push schema changes directly (no migration file)
+make db-push          # Push schema changes directly (no migration file, use for dev)
+make db-migrate       # Run pending Prisma migrations (interactive, use for production-style)
 make db-reset         # Drop and recreate DB (destroys data)
 make db-studio        # Prisma Studio on port 5555
 make shell-db         # psql session
 ```
 
-After editing `server/prisma/schema.prisma`, run `make db-migrate` to generate and apply a migration.
+After editing `server/prisma/schema.prisma`, run `make db-push` for development. The server Dockerfile CMD runs `prisma db push` + `prisma generate` + seed script on every container start.
 
 ### Type Checking
 
 ```bash
 make typecheck        # Runs tsc --noEmit on both server and client
+```
+
+For individual checks during development:
+```bash
+cd client && npx tsc --noEmit    # Client only
+cd server && npx tsc --noEmit    # Server only (categoryColor/actualSpend errors are expected locally — Prisma client needs regeneration in Docker)
 ```
 
 No test framework or linter is configured.
@@ -45,30 +51,46 @@ Monorepo with two independent npm projects (`client/` and `server/`) orchestrate
 - Routes: `server/src/routes/{accounts,balance,income,expenses,actuals,projections,categories,spreadsheet}.ts` — each exports a Router
 - DB client: `server/src/lib/prisma.ts` — singleton Prisma instance
 - Schema: `server/prisma/schema.prisma` — 7 models: `Account`, `BalanceSnapshot`, `IncomeSource`, `PlannedExpense`, `PriceAdjustment`, `ActualSpend`, `CategoryColor`
+- Seed: `server/prisma/seed-accounts.ts` — creates default "Primary" account on first run, backfills orphaned records
 - Hot reload via `tsx watch` in Docker
+
+**Critical pattern**: All account-scoped routes use `Router({ mergeParams: true })` so `req.params.accountId` is accessible from the parent mount path. Forgetting this on a new route will cause `accountId` to be `undefined`.
 
 ### Client (React 19 + Vite + Tailwind v4 + DaisyUI v5)
 
 - Entry: `client/src/main.tsx` → `client/src/App.tsx` (single-page app, no router)
-- API layer: `client/src/api.ts` — typed fetch wrapper, all endpoints in one file
-- Types: `client/src/types.ts` — shared client-side types (manually kept in sync with Prisma schema, not generated)
+- API layer: `client/src/api.ts` — typed fetch wrapper, all endpoints in one file. Every data function takes `accountId` as first parameter.
+- Types: `client/src/types.ts` — shared client-side types (manually kept in sync with Prisma schema, not generated). Also contains `ChartType` and `ChartFullscreenOptions`.
+- Utility: `client/src/monthlyTotal.ts` — client-side interval matching (mirrors server's `matchesInterval`) for calculating current-month totals in collapsed panels.
 - Components in `client/src/components/` — DaisyUI class-based styling
-- Charts: Recharts (`ProjectionChart.tsx`)
+- Charts: Recharts v2.15 (5 chart types + `ChartFullscreen` wrapper for fullscreen/zoom)
 - Vite proxies `/api` requests to the server container in development
+- Source files are volume-mounted in Docker for HMR — client changes reflect without rebuild
+
+### State Management (App.tsx)
+
+App.tsx is the centralized state manager. Key data flow:
+1. On mount: fetch accounts, set `activeAccountId` from `localStorage`
+2. On account change: `fetchAll()` loads balance, income, incoming transfers, expenses, actuals, categories in parallel
+3. On dateRange/overrides/refreshKey change: `fetchProjections()` re-fetches projections
+4. `projections` state is shared to all chart components and LedgerView as props (single fetch, no duplication)
+5. Child components (IncomeList, ExpenseList, ActualSpendList) make their own CRUD API calls and trigger `onRefresh` callbacks
 
 ### Key Domain Concepts
 
-- **Multi-account**: Users can create multiple accounts (checking, savings, etc.). All data is scoped to accounts. The `Account` model is the top-level entity.
-- **Projections engine** (`server/src/routes/projections.ts`): The core feature. Simulates day-by-day balance from today forward, applying income/expense events based on their `Interval` (ONE_TIME, DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY). Supports date-range queries and client-side toggle overrides for what-if analysis. Also includes incoming transfers from other accounts as virtual income.
-- **Transfers**: Expenses with `isTransfer: true` and `transferToAccountId` set represent money moving between accounts. They appear as expenses in the source account and income in the target account's projections.
-- **Variable expenses**: Expenses with `isVariable: true` can have `PriceAdjustment` records that change the effective amount at specific dates.
-- **Actual spending** (`server/src/routes/actuals.ts`): Records real transactions with optional links to forecast expenses. When an actual links to a forecast expense on a day it would fire, the projection engine uses the actual amount instead of the forecast. Unlinked actuals appear as additional deductions. Events marked with `isActual: true` in projections.
-- **Overrides**: Client-side only — toggles income/expenses on/off temporarily without persisting, passed as query params to the projections endpoint.
-- **Spreadsheet exchange** (`server/src/routes/spreadsheet.ts`): Export all data to a formatted Excel workbook with instructions, data validation, and color-coded sheets. Import a modified workbook to create/update/delete records. Uses `exceljs` and `multer`.
+- **Multi-account**: All data scoped to accounts via `accountId` FK. The `Account` model is the top-level entity. Account selection persisted to `localStorage`.
+- **Projections engine** (`server/src/routes/projections.ts`): The core feature. Simulates day-by-day balance from today forward using `matchesInterval()` for 7 interval types, `getEffectiveAmount()` for variable pricing, and `applyDay()` which processes income, incoming transfers, actual spends, then forecast expenses (skipping forecasts covered by actuals).
+- **Transfers**: Expenses with `isTransfer: true` and `transferToAccountId` set. They appear as expenses in the source account and virtual income in the target account's projections. Target account events named `"{expenseName}-{MonthAbbrev}"` with category `"Transfer from {sourceAccount}"`.
+- **Actual spending**: Records real transactions with optional `forecastExpenseId` link. In `applyDay()`, actuals fire first and build a `coveredForecastIds` set — linked forecast expenses that would fire on the same day are skipped. Unlinked actuals are additional deductions. Events have `isActual: true`.
+- **Variable expenses**: `PriceAdjustment` records change effective amount at specific dates. `getEffectiveAmount()` picks the latest adjustment with `startDate <= currentDate`.
+- **Categories**: Global (not account-scoped). `GET /api/categories` auto-discovers categories from expense records and creates missing `CategoryColor` entries. Rename via PUT migrates all expenses. Delete clears category from expenses.
+- **Overrides**: Client-side what-if toggles. Map of `{id → active}` passed as query param to projections endpoint. Not persisted.
+- **Spreadsheet exchange** (`server/src/routes/spreadsheet.ts`): ExcelJS-based export/import with 7 sheets (Instructions, Balance, Income, Expenses, Price Adjustments, Actual Spending, Category Colors). All operations scoped by `accountId`. Import matches rows by ID: existing update, blank ID creates, missing rows delete.
+- **Fullscreen charts**: `ChartFullscreen.tsx` renders any chart at full viewport with zoom. Zoom works by slicing the `projections` array by index range. Each chart accepts optional `ChartFullscreenOptions` prop — when absent, renders normally (backward compatible). ProjectionChart uses `"fs-"` prefixed SVG gradient IDs in fullscreen to avoid DOM ID collisions.
 
 ### API Routes
 
-All data routes are scoped under `/api/accounts/:accountId/`. Categories and health remain global.
+All data routes scoped under `/api/accounts/:accountId/`. Categories and health are global.
 
 | Route | Methods | Purpose |
 |-------|---------|---------|
@@ -78,6 +100,7 @@ All data routes are scoped under `/api/accounts/:accountId/`. Categories and hea
 | `/api/accounts/:accountId/income` | GET, POST | Income sources CRUD |
 | `/api/accounts/:accountId/income/:id` | PUT, DELETE | Update/delete income |
 | `/api/accounts/:accountId/income/:id/toggle` | PATCH | Toggle active state |
+| `/api/accounts/:accountId/income/transfers` | GET | Incoming transfers (read-only) |
 | `/api/accounts/:accountId/expenses` | GET, POST | Planned expenses CRUD |
 | `/api/accounts/:accountId/expenses/:id` | PUT, DELETE | Update/delete expense |
 | `/api/accounts/:accountId/expenses/:id/toggle` | PATCH | Toggle active state |
@@ -85,11 +108,11 @@ All data routes are scoped under `/api/accounts/:accountId/`. Categories and hea
 | `/api/accounts/:accountId/expenses/:id/prices/:priceId` | PUT, DELETE | Update/delete price adjustment |
 | `/api/accounts/:accountId/actuals` | GET, POST | List/create actual spending records |
 | `/api/accounts/:accountId/actuals/:id` | PUT, DELETE | Update/delete actual spending record |
-| `/api/accounts/:accountId/projections` | GET | Balance forecast (integrates actuals, query: startDate/endDate or days, overrides) |
+| `/api/accounts/:accountId/projections` | GET | Balance forecast (query: startDate/endDate or days, overrides) |
 | `/api/accounts/:accountId/spreadsheet/export` | GET | Download account data as formatted Excel workbook |
-| `/api/accounts/:accountId/spreadsheet/import` | POST | Upload modified workbook to sync account data |
-| `/api/categories` | GET | List category colors (global) |
-| `/api/categories/:name` | PUT | Set category color (global) |
+| `/api/accounts/:accountId/spreadsheet/import` | POST | Upload modified workbook to sync account data (multipart/form-data) |
+| `/api/categories` | GET, POST | List/create categories (global, auto-discovers from expenses) |
+| `/api/categories/:name` | PUT, DELETE | Update/delete category (rename migrates expenses) |
 | `/api/health` | GET | Health check |
 
 ### Ports
