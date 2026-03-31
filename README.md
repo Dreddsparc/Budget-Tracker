@@ -85,8 +85,28 @@ A personal finance forecasting tool that projects your bank balance day-by-day b
 
 ### Prerequisites
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (includes Docker Compose)
-- [GNU Make](https://www.gnu.org/software/make/) (pre-installed on macOS and most Linux distros)
+You need **Docker Desktop** (which includes Docker Compose) and **GNU Make**. Setup takes about 5 minutes.
+
+**macOS:**
+
+1. Install Docker Desktop: download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) or run `brew install --cask docker`.
+2. Launch Docker Desktop and wait for the whale icon to appear in the menu bar. It is ready when the icon stops animating.
+3. GNU Make is pre-installed on macOS -- no action needed.
+
+**Windows 11:**
+
+1. Enable WSL 2 (required by Docker Desktop): open PowerShell as Administrator and run `wsl --install`, then restart your computer.
+2. Install Docker Desktop: download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/). During installation, ensure "Use WSL 2 based engine" is checked.
+3. Launch Docker Desktop and accept the service agreement.
+4. Install GNU Make: run `winget install GnuWin32.Make` in a terminal, or use Git Bash (included with [Git for Windows](https://gitforwindows.org/), which provides make).
+
+**Before running `make dev`**, confirm Docker Desktop is running (not just installed). You can verify by opening a terminal and running:
+
+```bash
+docker --version
+```
+
+The first run downloads container images and installs dependencies, which takes a few minutes. Subsequent starts are fast.
 
 ### Setup
 

@@ -1,5 +1,17 @@
 # Docker Setup
 
+## Prerequisites
+
+- **Docker Desktop 4.x or later.** Download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/).
+- **Windows only:** WSL 2 must be enabled before installing Docker Desktop. Run `wsl --install` in an admin PowerShell and restart.
+- **Docker Compose v2+** is required. It ships built into Docker Desktop -- no separate install is needed. Verify with:
+  ```bash
+  docker compose version
+  ```
+  You should see `Docker Compose version v2.x.x`. If you see an error or `v1.x`, update Docker Desktop.
+
+## Services
+
 The application runs as three Docker Compose services: a PostgreSQL database, a Node.js API server, and a Vite dev server for the React client.
 
 ## Services

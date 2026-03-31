@@ -2,6 +2,43 @@
 
 This guide walks you through your first time using Budget Tracker, from opening the app to seeing your first balance projection.
 
+## Installing Docker Desktop
+
+Budget Tracker runs inside Docker, which means you do not need to install Node.js, PostgreSQL, or any other dependencies directly. Docker Desktop handles all of that for you in isolated containers.
+
+### macOS
+
+1. Go to [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) and click **Download for Mac**. Choose the Apple Silicon or Intel chip version to match your Mac (if you are unsure, click the Apple menu in the top-left corner of your screen, then **About This Mac** -- it will say "Apple M1/M2/M3" or "Intel").
+2. Open the downloaded `.dmg` file and drag Docker into your Applications folder.
+3. Open Docker Desktop from your Applications folder. You may be prompted to grant permissions -- click **OK** or **Allow** when asked.
+4. Wait for the whale icon to appear in the menu bar at the top of your screen. When it stops animating, Docker is ready.
+
+### Windows 11
+
+1. **Enable WSL 2 first.** Open the Start menu, type **PowerShell**, right-click **Windows PowerShell**, and select **Run as administrator**. In the window that opens, type the following and press Enter:
+   ```
+   wsl --install
+   ```
+   When it finishes, restart your computer.
+
+2. After restarting, go to [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/) and click **Download for Windows**.
+3. Run the installer. When you see the configuration options, make sure **Use WSL 2 based engine** is checked. Complete the installation.
+4. Open Docker Desktop from your Start menu. Accept the service agreement when prompted.
+
+### Verify Docker is working
+
+Open a terminal (Terminal on macOS, PowerShell or Command Prompt on Windows) and run:
+
+```bash
+docker --version
+```
+
+You should see something like `Docker version 27.x.x`. If you get an error saying the command is not found, Docker Desktop may not be running -- open it from your Applications folder or Start menu and try again.
+
+### Important
+
+Docker Desktop must be running every time you use Budget Tracker. If you restart your computer, open Docker Desktop before running `make dev`. You will know it is ready when the whale icon appears in your menu bar (macOS) or system tray (Windows).
+
 ## What You Will Need
 
 Before you start, have an approximate idea of:
