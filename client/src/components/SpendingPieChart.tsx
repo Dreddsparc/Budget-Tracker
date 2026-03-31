@@ -101,7 +101,7 @@ export default function SpendingPieChart({ projections, categoryColors, options 
 
     for (const day of projections) {
       for (const event of day.events) {
-        if (event.type !== "expense") continue;
+        if (event.type !== "expense" || event.isTransfer) continue;
         const cat = event.category || "Uncategorized";
         totals.set(cat, (totals.get(cat) || 0) + event.amount);
       }

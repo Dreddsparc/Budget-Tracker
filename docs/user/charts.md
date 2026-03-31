@@ -40,7 +40,7 @@ All charts respect the currently selected date range. See the Date Range section
 
 ## Spending by Category Chart
 
-**What it shows:** A donut (ring) chart breaking down your total expenses by category over the selected date range.
+**What it shows:** A donut (ring) chart breaking down your total expenses by category over the selected date range. Transfers between accounts are excluded since they are not real spending -- only actual expenses appear.
 
 **When to use it:** Use it to understand where your money is going. Helpful for identifying your largest spending categories and finding areas to cut back.
 
@@ -59,7 +59,7 @@ All charts respect the currently selected date range. See the Date Range section
 
 ## Income vs Expenses Chart
 
-**What it shows:** Monthly grouped bar chart comparing total income against total expenses.
+**What it shows:** Monthly grouped bar chart comparing total income against total expenses. Transfers between accounts are excluded from the expense totals.
 
 **When to use it:** Use it to compare your earnings to your spending month by month. Helpful for spotting months where expenses exceed income.
 
@@ -78,7 +78,7 @@ All charts respect the currently selected date range. See the Date Range section
 
 ## Cash Flow Chart
 
-**What it shows:** Monthly net cash flow as vertical bars, plus a running cumulative total.
+**What it shows:** Monthly net cash flow as vertical bars, plus a running cumulative total. Transfers between accounts are excluded from expense totals.
 
 **When to use it:** Use it to see which months you have a surplus and which months you have a deficit. The cumulative line shows whether you are trending up or down over time.
 
@@ -97,7 +97,7 @@ All charts respect the currently selected date range. See the Date Range section
 
 ## Expense Trends Chart
 
-**What it shows:** A stacked area chart of your expenses over time, broken down by category and smoothed into weekly intervals.
+**What it shows:** A stacked area chart of your expenses over time, broken down by category and smoothed into weekly intervals. Transfers between accounts are excluded.
 
 **When to use it:** Use it to see how your spending patterns change over time. Helpful for identifying seasonal patterns or trends in specific categories.
 

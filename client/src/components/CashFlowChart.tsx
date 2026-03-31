@@ -71,7 +71,7 @@ export default function CashFlowChart({ projections, options }: Props) {
 
       for (const event of day.events) {
         if (event.type === "income") m.income += event.amount;
-        else m.expenses += event.amount;
+        else if (!event.isTransfer) m.expenses += event.amount;
       }
     }
 

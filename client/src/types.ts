@@ -82,6 +82,7 @@ export interface ProjectionEvent {
   type: "income" | "expense";
   category?: string;
   isActual?: boolean;
+  isTransfer?: boolean;
 }
 
 export interface CategoryColor {

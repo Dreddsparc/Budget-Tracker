@@ -58,7 +58,7 @@ export default function ExpenseTrendChart({ projections, categoryColors, options
       const week = weeks.get(weekKey)!;
 
       for (const event of day.events) {
-        if (event.type !== "expense") continue;
+        if (event.type !== "expense" || event.isTransfer) continue;
         const cat = event.category || "Uncategorized";
         allCategories.add(cat);
         week.set(cat, (week.get(cat) || 0) + event.amount);

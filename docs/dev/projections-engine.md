@@ -24,6 +24,7 @@ interface ProjectionEvent {
   amount: number;
   category?: string;
   isActual?: boolean;         // true when the event comes from an ActualSpend record
+  isTransfer?: boolean;       // true when the event is a transfer between accounts
 }
 
 interface ProjectionDay {
@@ -168,9 +169,13 @@ Processes all events for a single day and returns the updated balance and event 
 1. **Actual spending** -- iterates `actualsForDay`. Each actual is emitted as an expense event with `isActual: true`. Actuals that have a `forecastExpenseId` add that ID to a `coveredForecastIds` set.
 2. **Regular income** -- iterates `effectiveIncome`, checks `active` and `matchesInterval`.
 3. **Incoming transfers** -- iterates `incomingTransfers`, checks `active`, `endDate`, and `matchesInterval`. Uses `getEffectiveAmount` since transfers can be variable.
-4. **Expenses** -- iterates `effectiveExpenses`, checks `active`, `endDate`, and `matchesInterval`. Uses `getEffectiveAmount`. **Expenses whose `id` is in `coveredForecastIds` are skipped** -- the linked actual already accounts for that spend.
+4. **Expenses** -- iterates `effectiveExpenses`, checks `active`, `endDate`, and `matchesInterval`. Uses `getEffectiveAmount`. **Expenses whose `id` is in `coveredForecastIds` are skipped** -- the linked actual already accounts for that spend. Transfer expenses (where `isTransfer` is true on the source expense) are tagged with `isTransfer: true` on the event.
 
 Income and incoming transfers add to the balance. Expenses subtract from the balance.
+
+### Transfer Filtering in Charts
+
+Transfer expense events have `isTransfer: true` set on the `ProjectionEvent`. The spending analysis charts (SpendingPieChart, IncomeExpenseBarChart, CashFlowChart, ExpenseTrendChart) exclude transfer events from their aggregations since transfers are not real spending -- they are money moving between the user's own accounts. The ProjectionChart and LedgerView include transfers because they affect the account balance.
 
 ### Balance Rounding
 

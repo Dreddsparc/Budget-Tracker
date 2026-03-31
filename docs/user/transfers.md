@@ -55,6 +55,17 @@ For example, if you create a monthly transfer named "Savings Transfer" in your c
 
 This naming convention helps you identify which month each transfer occurrence belongs to when browsing the target account.
 
+## Transfers and Charts
+
+Transfers affect the Projection chart and Ledger (they change your account balance), but they are **excluded** from the spending analysis charts:
+
+- **Spending by Category** -- transfers do not appear in the pie chart
+- **Income vs Expenses** -- transfers are not counted in the expense bars
+- **Cash Flow** -- transfers are not counted in the expense side of the net calculation
+- **Expense Trends** -- transfers do not appear in the category breakdown
+
+This is because transfers are not real spending -- they are money moving between your own accounts. The spending charts show only actual expenses.
+
 ## Editing a Transfer
 
 To change a transfer's amount, interval, or other details:

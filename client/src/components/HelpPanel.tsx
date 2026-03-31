@@ -170,6 +170,8 @@ function TopicContent({ topic, onNavigate }: { topic: HelpTopic; onNavigate: (t:
             <li><strong>Source account:</strong> Shows as an expense grouped under "Transfer To [Account]"</li>
             <li><strong>Target account:</strong> Shows as read-only income under "Transfer from [Account]". In projections, events are named "[TransferName]-[Month]"</li>
           </ul>
+          <h4 className="font-semibold text-sm">Transfers and Charts</h4>
+          <p className="text-sm">Transfers appear in the <strong>Projection chart</strong> and <strong>Ledger</strong> (they affect your balance), but are excluded from spending analysis charts (Spending by Category, Income vs Expenses, Cash Flow, Expense Trends) since they are not real spending.</p>
           <div className="bg-base-200 rounded-lg p-3 text-sm">
             <strong>Note:</strong> Transfers can only be edited from the source account. They appear as read-only in the target.
           </div>
@@ -207,13 +209,16 @@ function TopicContent({ topic, onNavigate }: { topic: HelpTopic; onNavigate: (t:
           <h4 className="font-semibold text-sm">Projection</h4>
           <p className="text-sm">Area chart showing your balance day-by-day. The line color reflects the dominant expense category. Green gradient when above zero, red when below. Hover for daily details. Actual spending events appear in amber.</p>
           <h4 className="font-semibold text-sm">Spending by Category</h4>
-          <p className="text-sm">Donut chart breaking down total expenses by category. Sorted by amount. Hover for percentages.</p>
+          <p className="text-sm">Donut chart breaking down total expenses by category. Sorted by amount. Hover for percentages. Transfers between accounts are excluded.</p>
           <h4 className="font-semibold text-sm">Income vs Expenses</h4>
-          <p className="text-sm">Monthly grouped bars. Green = income, red = expenses. Hover to see net (income minus expenses).</p>
+          <p className="text-sm">Monthly grouped bars. Green = income, red = expenses (excluding transfers). Hover to see net.</p>
           <h4 className="font-semibold text-sm">Cash Flow</h4>
-          <p className="text-sm">Monthly net bars. Green = surplus, red = deficit. Shows cumulative total for the period.</p>
+          <p className="text-sm">Monthly net bars. Green = surplus, red = deficit (transfers excluded from expenses). Shows cumulative total.</p>
           <h4 className="font-semibold text-sm">Expense Trends</h4>
-          <p className="text-sm">Stacked area chart showing weekly spending by category over time. Smooths daily noise to show patterns.</p>
+          <p className="text-sm">Stacked area chart showing weekly spending by category over time. Smooths daily noise to show patterns. Transfers excluded.</p>
+          <div className="bg-base-200 rounded-lg p-3 text-sm">
+            <strong>Note:</strong> Transfers between your accounts are not real spending, so they only appear in the Projection chart and Ledger (where they affect your balance), not in the spending analysis charts above.
+          </div>
           <h4 className="font-semibold text-sm">Fullscreen Mode</h4>
           <p className="text-sm">Hover over any chart and click the expand icon in the top-right corner to open the chart in fullscreen. The chart fills the entire screen with a toolbar and zoom controls.</p>
           <h4 className="font-semibold text-sm">Zoom Select</h4>

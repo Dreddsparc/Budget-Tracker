@@ -10,6 +10,7 @@ interface ProjectionEvent {
   amount: number;
   category?: string;
   isActual?: boolean;
+  isTransfer?: boolean;
 }
 
 interface ProjectionDay {
@@ -85,6 +86,7 @@ interface ItemWithAdjustments {
   amount: number;
   category: string | null;
   isVariable: boolean;
+  isTransfer?: boolean;
   priceAdjustments: { amount: number; startDate: Date }[];
   sourceAccountName?: string;
 }
@@ -179,6 +181,7 @@ function applyDay(
       const amount = getEffectiveAmount(expense, currentDate);
       const event: ProjectionEvent = { type: "expense", name: expense.name, amount };
       if (expense.category) event.category = expense.category;
+      if (expense.isTransfer) event.isTransfer = true;
       events.push(event);
       balance -= amount;
     }
