@@ -214,6 +214,28 @@ function TopicContent({ topic, onNavigate }: { topic: HelpTopic; onNavigate: (t:
           <p className="text-sm">Monthly net bars. Green = surplus, red = deficit. Shows cumulative total for the period.</p>
           <h4 className="font-semibold text-sm">Expense Trends</h4>
           <p className="text-sm">Stacked area chart showing weekly spending by category over time. Smooths daily noise to show patterns.</p>
+          <h4 className="font-semibold text-sm">Fullscreen Mode</h4>
+          <p className="text-sm">Hover over any chart and click the expand icon in the top-right corner to open the chart in fullscreen. The chart fills the entire screen with a toolbar and zoom controls.</p>
+          <h4 className="font-semibold text-sm">Zoom Select</h4>
+          <ol className="list-decimal list-inside space-y-1 text-sm">
+            <li>In fullscreen, click <strong>Zoom Select</strong> in the toolbar</li>
+            <li>Click a point on the chart to set the start of the range</li>
+            <li>Click another point to set the end</li>
+            <li>The chart zooms to show only that range with full detail</li>
+          </ol>
+          <h4 className="font-semibold text-sm">Range Sliders</h4>
+          <p className="text-sm">Two sliders at the bottom of fullscreen let you drag the start and end points of the visible range. Date labels update as you drag.</p>
+          <h4 className="font-semibold text-sm">Chart Controls</h4>
+          <p className="text-sm">The fullscreen toolbar includes chart-specific toggles:</p>
+          <ul className="list-disc list-inside space-y-1 text-sm">
+            <li><strong>Projection:</strong> Area / Line -- switch between filled area and line only</li>
+            <li><strong>Income vs Expenses:</strong> Grouped / Stacked -- side-by-side or stacked bars</li>
+            <li><strong>Spending by Category:</strong> Donut / Full Pie -- ring or solid pie</li>
+            <li><strong>Expense Trends:</strong> Stacked / Individual -- stacked areas or separate lines</li>
+          </ul>
+          <div className="bg-base-200 rounded-lg p-3 text-sm">
+            <strong>Tip:</strong> Press Escape to step back: first cancels zoom select, then resets zoom, then closes fullscreen.
+          </div>
           <h4 className="font-semibold text-sm">Date Range</h4>
           <p className="text-sm">Use the preset buttons (30d, 60d, 90d, 6mo, 1yr) or click "Custom" for manual date selection. All charts respond to the selected range.</p>
         </div>
@@ -298,7 +320,10 @@ function TopicContent({ topic, onNavigate }: { topic: HelpTopic; onNavigate: (t:
             <li><strong>Saving goals:</strong> Create a Savings account, set up a transfer from checking, watch the Savings projection grow</li>
             <li><strong>Track vs. forecast:</strong> Record actuals in the Actual Spending panel, compare amber (actual) vs red (forecast) events in the chart</li>
             <li><strong>Variable bills:</strong> Mark expenses as variable, add price adjustments as bills change</li>
+            <li><strong>Deep analysis:</strong> Expand a chart to fullscreen, use Zoom Select to drill into a specific week or pay period, use the Area/Line toggle to see the trend more clearly</li>
           </ul>
+          <h4 className="font-semibold text-sm">Fullscreen Charts</h4>
+          <p className="text-sm">Hover over any chart and click the expand icon for a full-window view. Use <strong>Zoom Select</strong> to click two points and drill in, or drag the <strong>range sliders</strong> at the bottom. Each chart has its own toggle controls (Area/Line, Grouped/Stacked, etc.). See <Link topic="charts" onClick={onNavigate}>Charts</Link> for details.</p>
           <h4 className="font-semibold text-sm">Collapsible Panels</h4>
           <p className="text-sm">Click panel titles to collapse/expand. Collapsed panels show current-month totals so you always have context.</p>
         </div>

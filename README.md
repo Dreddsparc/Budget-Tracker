@@ -41,6 +41,7 @@ A personal finance forecasting tool that projects your bank balance day-by-day b
 - **Income vs Expenses** — monthly side-by-side bar comparison
 - **Cash Flow** — net monthly surplus/deficit with running total
 - **Expense Trends** — stacked area chart showing category spending week-over-week
+- **Fullscreen mode** — expand any chart to fill the screen, with interactive zoom (click-to-select range or drag sliders) and chart-specific controls (area/line, grouped/stacked, donut/pie, etc.)
 
 **Ledger View**
 - Detailed transaction-level table with daily balance tracking

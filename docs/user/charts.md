@@ -115,6 +115,75 @@ All charts respect the currently selected date range. See the Date Range section
 
 ---
 
+## Fullscreen Mode
+
+Any chart can be expanded to fill the entire browser window for detailed analysis. Fullscreen mode provides larger visuals, interactive zoom controls, and chart-specific display options.
+
+### Opening and Closing Fullscreen
+
+**To open:** Hover over any chart card. A small expand icon appears in the top-right corner of the card. Click it to enter fullscreen mode.
+
+**To close:** Click the **X** button in the toolbar, or press the **Escape** key.
+
+### Fullscreen Layout
+
+When a chart is in fullscreen, the view consists of:
+
+- **Toolbar** at the top -- shows the chart title, any chart-specific controls, zoom buttons, and the close button.
+- **Chart area** in the center -- the chart rendered at maximum height and width.
+- **Range sliders** at the bottom (time-series charts only) -- two sliders for controlling the visible date range.
+
+The Spending by Category chart does not have range sliders because it is not a time-series chart.
+
+### Zoom Select (Click-to-Zoom)
+
+Zoom Select lets you click two points on a time-series chart to zoom into that date range.
+
+1. Click the **Zoom Select** button in the toolbar.
+2. The cursor changes to a crosshair.
+3. Click a point on the chart to set the start of the range.
+4. A badge appears reading "Now click the end point."
+5. Click another point to set the end of the range.
+6. The chart zooms to show only that date range. All chart elements -- axis labels, tooltips, gradients, and category colors -- update accurately for the zoomed view.
+
+To cancel without zooming, press **Escape** or click the **Cancel** button.
+
+### Range Sliders
+
+For time-series charts (Projection, Income vs Expenses, Cash Flow, and Expense Trends), two slider bars appear at the bottom of the fullscreen view:
+
+- The **left slider** controls the start date.
+- The **right slider** controls the end date.
+- Date labels update as you drag each slider.
+
+This provides fine-grained control over the visible date range without using Zoom Select.
+
+### Reset Zoom
+
+When the chart is zoomed in (via Zoom Select or the range sliders), a **Reset Zoom** button appears in the toolbar. Click it to restore the full date range.
+
+Pressing **Escape** while zoomed resets the zoom first. Pressing **Escape** again (or when not zoomed) closes fullscreen.
+
+### Toolbar: Zoomed State
+
+When zoomed in, the toolbar displays the currently visible date range and the number of days in that range, so you always know what slice of data you are viewing.
+
+### Chart-Specific Controls
+
+Each chart type may have a toggle button in the fullscreen toolbar that changes how the data is displayed:
+
+| Chart | Toggle | Options |
+|-------|--------|---------|
+| Projection | Area / Line | Filled area chart or line-only |
+| Income vs Expenses | Grouped / Stacked | Side-by-side bars or stacked bars |
+| Spending by Category | Donut / Full Pie | Ring chart or solid pie |
+| Expense Trends | Stacked / Individual | Stacked areas or separate lines per category |
+| Cash Flow | -- | No additional controls |
+
+These toggles are only available in fullscreen mode.
+
+---
+
 ## Date Range
 
 All charts and the ledger share the same date range. You control it using the bar at the top of the page, below the Charts/Ledger toggle.

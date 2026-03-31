@@ -33,7 +33,7 @@ Budget-Tracker/
       api.ts               # Typed fetch wrapper -- all API calls
       types.ts             # Client-side TypeScript interfaces
       App.tsx              # Root component, state management
-      components/          # UI components (charts, lists, modals)
+      components/          # UI components (charts, lists, modals, ChartFullscreen)
     Dockerfile
     vite.config.ts
   server/                  # Express + Prisma + PostgreSQL

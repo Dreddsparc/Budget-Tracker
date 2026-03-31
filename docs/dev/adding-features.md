@@ -32,13 +32,17 @@ export default function MyNewChart({ projections, categoryColors }: Props) {
 }
 ```
 
-2. **Register the chart type** in `client/src/App.tsx`:
+2. **Register the chart type**:
+
+In `client/src/types.ts`, add to the `ChartType` union:
 
 ```typescript
-// Add to the ChartType union (line 18)
-type ChartType = "projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend" | "my-new-chart";
+export type ChartType = "projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend" | "my-new-chart";
+```
 
-// Add to CHART_OPTIONS array (line 20)
+In `client/src/App.tsx`, add to the `CHART_OPTIONS` array:
+
+```typescript
 { value: "my-new-chart", label: "My New Chart" },
 ```
 
@@ -54,6 +58,20 @@ case "my-new-chart":
 ```
 
 No server changes required -- all chart components consume the same `projections` data.
+
+### Supporting fullscreen mode
+
+All existing chart components accept an optional `options?: ChartFullscreenOptions` prop. When `options` is provided, the component renders without its card wrapper and uses `options.height` instead of a fixed height. Chart-specific toggles (e.g., `chartStyle`, `barLayout`, `pieStyle`, `trendMode`) are also read from `options` when present.
+
+This pattern keeps chart components backward compatible: callers that omit `options` get the original card-wrapped, fixed-height behavior. The `ChartFullscreen` component is the only caller that provides `options`.
+
+To make a new chart work in fullscreen:
+
+1. Add `options?: ChartFullscreenOptions` to your component's props interface.
+2. When `options` is present, use `options.height` for the chart height and skip the card wrapper.
+3. Read any chart-specific toggles from `options` (e.g., `options.chartStyle`) and fall back to sensible defaults.
+4. If your chart uses SVG gradients with fixed `id` attributes, prefix them (e.g., `"fs-"`) when `options` is present to avoid DOM ID collisions with the non-fullscreen instance.
+5. Add a rendering case for your chart type in `ChartFullscreen.tsx`.
 
 ## Adding a New Field to Expenses
 

@@ -37,6 +37,7 @@ You tell it your current balance, your income sources, and your planned expenses
 - Transfer money between accounts
 - Organize expenses by category with custom colors
 - View five different chart types for different perspectives on your finances
+- Expand any chart to fullscreen with interactive zoom and range controls
 - Browse a day-by-day ledger of projected transactions
 - Record actual spending and link it to forecast expenses for real-vs-planned tracking
 - Run what-if scenarios by temporarily toggling items on and off

@@ -248,17 +248,18 @@ export default function ActualSpendList({
               {collapsed ? ">" : "v"}
             </span>
             <h2 className="card-title text-warning">Actual Spending</h2>
-            {onHelp && (
-              <button className="btn btn-ghost btn-xs btn-circle opacity-40 hover:opacity-100" onClick={onHelp} aria-label="Help" title="Help">
-                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
-              </button>
-            )}
             {collapsed && (
               <span className="text-warning font-semibold text-sm ml-1">
                 {items.length} entries, {formatCurrency(totalAmount)}
               </span>
             )}
           </button>
+          <div className="flex items-center gap-1">
+            {onHelp && (
+              <button className="btn btn-ghost btn-xs btn-circle opacity-40 hover:opacity-100" onClick={onHelp} aria-label="Help" title="Help">
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+              </button>
+            )}
           {!collapsed && (
             <button
               className="btn btn-sm btn-warning btn-outline"
@@ -271,6 +272,7 @@ export default function ActualSpendList({
               + Add
             </button>
           )}
+          </div>
         </div>
 
         {collapsed ? null : (

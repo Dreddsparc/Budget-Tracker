@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import type { ProjectionDay } from "../types";
+import type { ProjectionDay, ChartFullscreenOptions } from "../types";
 
 const FALLBACK_PALETTE = [
   "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
@@ -37,9 +37,10 @@ function formatCurrency(value: number): string {
 interface Props {
   projections: ProjectionDay[];
   categoryColors: Record<string, string>;
+  options?: ChartFullscreenOptions;
 }
 
-export default function ExpenseTrendChart({ projections, categoryColors }: Props) {
+export default function ExpenseTrendChart({ projections, categoryColors, options }: Props) {
   const { data, categories } = useMemo(() => {
     // Aggregate by week to smooth daily noise
     const weeks = new Map<string, Map<string, number>>();
@@ -92,57 +93,63 @@ export default function ExpenseTrendChart({ projections, categoryColors }: Props
   }, [projections]);
 
   if (data.length === 0 || categories.length === 0) {
-    return (
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body items-center justify-center h-[430px]">
-          <p className="text-base-content/50">No expense data in this date range</p>
-        </div>
+    const empty = (
+      <div className="items-center justify-center h-[430px] flex">
+        <p className="text-base-content/50">No expense data in this date range</p>
       </div>
     );
+    return options ? empty : <div className="card bg-base-100 shadow-xl"><div className="card-body">{empty}</div></div>;
   }
+
+  const isLines = options?.trendMode === "lines";
+
+  const chart = (
+    <ResponsiveContainer width="100%" height={options?.height ?? 370}>
+      <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+        <XAxis
+          dataKey="week"
+          tick={{ fontSize: 12 }}
+          interval="preserveStartEnd"
+          minTickGap={40}
+        />
+        <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12 }} width={80} />
+        <Tooltip
+          formatter={(value: number, name: string) => [formatCurrency(value), name]}
+          contentStyle={{
+            backgroundColor: "oklch(var(--b3))",
+            border: "1px solid oklch(var(--bc) / 0.2)",
+            borderRadius: "0.5rem",
+            fontSize: "0.875rem",
+          }}
+        />
+        <Legend />
+        {categories.map((cat) => {
+          const color = categoryColors[cat] || hashColor(cat);
+          return (
+            <Area
+              key={cat}
+              type="monotone"
+              dataKey={cat}
+              stackId={isLines ? undefined : "expenses"}
+              stroke={color}
+              fill={color}
+              fillOpacity={isLines ? 0.1 : 0.6}
+            />
+          );
+        })}
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+
+  if (options) return chart;
 
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body">
         <h2 className="card-title">Expense Trends by Category</h2>
         <p className="text-xs text-base-content/50">Weekly aggregation</p>
-
-        <ResponsiveContainer width="100%" height={370}>
-          <AreaChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            <XAxis
-              dataKey="week"
-              tick={{ fontSize: 12 }}
-              interval="preserveStartEnd"
-              minTickGap={40}
-            />
-            <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12 }} width={80} />
-            <Tooltip
-              formatter={(value: number, name: string) => [formatCurrency(value), name]}
-              contentStyle={{
-                backgroundColor: "oklch(var(--b3))",
-                border: "1px solid oklch(var(--bc) / 0.2)",
-                borderRadius: "0.5rem",
-                fontSize: "0.875rem",
-              }}
-            />
-            <Legend />
-            {categories.map((cat) => {
-              const color = categoryColors[cat] || hashColor(cat);
-              return (
-                <Area
-                  key={cat}
-                  type="monotone"
-                  dataKey={cat}
-                  stackId="expenses"
-                  stroke={color}
-                  fill={color}
-                  fillOpacity={0.6}
-                />
-              );
-            })}
-          </AreaChart>
-        </ResponsiveContainer>
+        {chart}
       </div>
     </div>
   );

@@ -50,6 +50,12 @@ App
   |     |-- Add/edit form (date, amount, note, forecast dropdown, category)
   |     |-- Entries grouped by date
   |
+  |-- ChartFullscreen (fixed overlay, rendered when fullscreenChart is set)
+  |     |-- Range sliders (start/end window control)
+  |     |-- Zoom select (click-to-zoom on chart data)
+  |     |-- Chart-specific toggle controls (via ToggleGroup)
+  |     |-- Delegates to the same chart components listed above
+  |
   |-- Modals
         |-- SetBalanceModal
         |-- AccountManageModal
@@ -81,6 +87,7 @@ All state lives in `App.tsx` using `useState` hooks. There is no external state 
 | `refreshKey` | `number` | Increment to force re-fetch of projections |
 | `loading` | `boolean` | Initial data loading state |
 | `projectionsLoading` | `boolean` | Projection computation loading state |
+| `fullscreenChart` | `ChartType \| null` | Which chart is currently displayed fullscreen, or `null` if none |
 
 ### DateRange Type
 
@@ -152,6 +159,17 @@ All chart components receive `projections` as a prop. Some also receive `categor
 | `ExpenseTrendChart` | `projections`, `categoryColors` |
 | `LedgerView` | `projections`, `dateRange`, `loading` |
 
+### Fullscreen Chart Flow
+
+1. Each chart in `renderChart()` is wrapped in a relative container with a hover-visible expand button.
+2. Clicking the expand button sets `fullscreenChart` to the current `ChartType`.
+3. `ChartFullscreen` renders as a fixed fullscreen overlay (z-100) and receives `projections`, `categoryColors`, and the `chartType`.
+4. Inside `ChartFullscreen`, the projections array is sliced by `zoomRange` before being passed to the underlying chart component. This means all zoom and range operations work by narrowing the data window, not by configuring the chart axis.
+5. Range sliders at the bottom of the overlay control the start and end indices into the projections array.
+6. "Zoom Select" enters crosshair mode: the first click sets the start index, the second click sets the end index, and the view zooms to that range.
+7. Escape key behavior cascades: if zoom select is active, it cancels zoom select; if a zoom range is set, it resets the zoom; otherwise it closes the fullscreen overlay.
+8. Chart-specific toggles (e.g., area vs line, grouped vs stacked, donut vs full) are managed as local state within `ChartFullscreen` and passed to the chart component via the `options` prop.
+
 ### Override Flow
 
 1. User clicks a toggle on an income or expense item.
@@ -183,6 +201,18 @@ Line chart (Recharts) showing projected balance over time. Displays the balance 
 ### SpendingPieChart
 
 Pie chart showing expense distribution by category within the projection window. Uses `categoryColors` for slice coloring.
+
+### ChartFullscreen
+
+Fullscreen chart overlay component (`ChartFullscreen.tsx`). Renders a fixed overlay at z-100 that delegates to the standard chart components (ProjectionChart, SpendingPieChart, etc.) with an `options: ChartFullscreenOptions` prop. The chart height is dynamically calculated from `window.innerHeight - 180` and updates on window resize.
+
+Key features:
+- **Data slicing**: Zoom and range controls work by slicing the `projections` array by index, then passing the narrowed array to the chart component. No chart-level axis configuration is involved.
+- **Click-to-zoom**: A "Zoom Select" button enters crosshair cursor mode. The first click records the start index, the second records the end index, and the view zooms to that range.
+- **Range sliders**: Two HTML range inputs at the bottom control the visible start and end of the projections window.
+- **Escape cascade**: Escape cancels zoom select if active, resets zoom if zoomed, or closes the overlay.
+- **Chart toggles**: Chart-specific controls (area/line, grouped/stacked, donut/full, stacked/lines) are managed as local state and passed via the `options` prop.
+- **SVG ID isolation**: ProjectionChart prefixes SVG gradient IDs with `"fs-"` when rendered in fullscreen to avoid DOM ID collisions with the main page chart.
 
 ### LedgerView
 
@@ -236,7 +266,11 @@ Two functions bypass the JSON helper:
 
 ## Type Definitions
 
-`client/src/types.ts` contains all client-side interfaces. These are manually kept in sync with the Prisma schema -- there is no code generation step. Key differences from the server types:
+`client/src/types.ts` contains all client-side interfaces and shared type aliases. These are manually kept in sync with the Prisma schema -- there is no code generation step.
+
+The `ChartType` union type (`"projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend"`) and the `ChartFullscreenOptions` interface are also defined here. `ChartType` was moved from `App.tsx` to `types.ts` so it can be shared between `App.tsx` and `ChartFullscreen.tsx`.
+
+Key differences from the server types:
 - Dates are `string` (ISO format) rather than `Date` objects.
 - `BalanceSnapshot` omits `accountId` and `createdAt` (not used in the UI).
 - `IncomingTransfer` is a flattened shape with `sourceAccountName` rather than a nested account relation.

@@ -16,9 +16,9 @@ import CategoryManageModal from "./components/CategoryManageModal";
 import ActualSpendList from "./components/ActualSpendList";
 import HelpPanel, { HelpButton } from "./components/HelpPanel";
 import type { HelpTopic } from "./components/HelpPanel";
+import ChartFullscreen from "./components/ChartFullscreen";
 import SpreadsheetControls from "./components/SpreadsheetControls";
-
-type ChartType = "projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend";
+import type { ChartType } from "./types";
 
 const CHART_OPTIONS: { value: ChartType; label: string }[] = [
   { value: "projection", label: "Projection" },
@@ -60,6 +60,7 @@ export default function App() {
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
   const [helpTopic, setHelpTopic] = useState<HelpTopic>("getting-started");
+  const [fullscreenChart, setFullscreenChart] = useState<ChartType | null>(null);
   const [projections, setProjections] = useState<ProjectionDay[]>([]);
   const [projectionsLoading, setProjectionsLoading] = useState(false);
 
@@ -225,33 +226,39 @@ export default function App() {
       );
     }
 
+    let chart: React.ReactNode;
     switch (chartType) {
       case "projection":
-        return (
-          <ProjectionChart
-            projections={projections}
-            categoryColors={categoryColors}
-          />
-        );
+        chart = <ProjectionChart projections={projections} categoryColors={categoryColors} />;
+        break;
       case "spending":
-        return (
-          <SpendingPieChart
-            projections={projections}
-            categoryColors={categoryColors}
-          />
-        );
+        chart = <SpendingPieChart projections={projections} categoryColors={categoryColors} />;
+        break;
       case "income-vs-expenses":
-        return <IncomeExpenseBarChart projections={projections} />;
+        chart = <IncomeExpenseBarChart projections={projections} />;
+        break;
       case "cash-flow":
-        return <CashFlowChart projections={projections} />;
+        chart = <CashFlowChart projections={projections} />;
+        break;
       case "expense-trend":
-        return (
-          <ExpenseTrendChart
-            projections={projections}
-            categoryColors={categoryColors}
-          />
-        );
+        chart = <ExpenseTrendChart projections={projections} categoryColors={categoryColors} />;
+        break;
     }
+
+    return (
+      <div className="relative group">
+        {chart}
+        <button
+          className="btn btn-ghost btn-sm btn-circle absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-70 hover:!opacity-100 transition-opacity"
+          onClick={() => setFullscreenChart(chartType)}
+          title="Expand chart"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+          </svg>
+        </button>
+      </div>
+    );
   }
 
   if (loading || !activeAccountId) {
@@ -442,6 +449,14 @@ export default function App() {
         topic={helpTopic}
         onClose={() => setShowHelp(false)}
         onChangeTopic={setHelpTopic}
+      />
+
+      <ChartFullscreen
+        open={fullscreenChart !== null}
+        chartType={fullscreenChart ?? "projection"}
+        projections={projections}
+        categoryColors={categoryColors}
+        onClose={() => setFullscreenChart(null)}
       />
     </div>
   );

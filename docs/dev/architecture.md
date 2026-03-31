@@ -45,7 +45,7 @@ Budget-Tracker/
       App.tsx              # Root component, all application state
       api.ts               # Typed fetch wrapper
       types.ts             # Client-side type definitions
-      components/          # 15 UI components
+      components/          # 16 UI components (includes ChartFullscreen)
   server/
     package.json           # Express, Prisma, ExcelJS, multer
     Dockerfile

@@ -105,3 +105,17 @@ export interface Override {
 export type DateRange =
   | { kind: "preset"; days: number }
   | { kind: "custom"; startDate: string; endDate: string };
+
+export type ChartType = "projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend";
+
+export interface ChartFullscreenOptions {
+  height: number;
+  showBrush?: boolean;
+  brushIndex?: [number, number];
+  onBrushChange?: (range: [number, number]) => void;
+  chartStyle?: "area" | "line";
+  showGrid?: boolean;
+  barLayout?: "grouped" | "stacked";
+  pieStyle?: "donut" | "full";
+  trendMode?: "stacked" | "lines";
+}

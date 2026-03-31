@@ -10,7 +10,7 @@ import {
   ReferenceLine,
   Cell,
 } from "recharts";
-import type { ProjectionDay } from "../types";
+import type { ProjectionDay, ChartFullscreenOptions } from "../types";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -30,6 +30,7 @@ interface MonthFlow {
 
 interface Props {
   projections: ProjectionDay[];
+  options?: ChartFullscreenOptions;
 }
 
 function CustomTooltip({
@@ -57,7 +58,7 @@ function CustomTooltip({
   );
 }
 
-export default function CashFlowChart({ projections }: Props) {
+export default function CashFlowChart({ projections, options }: Props) {
   const data = useMemo(() => {
     const months = new Map<string, { income: number; expenses: number }>();
 
@@ -83,13 +84,12 @@ export default function CashFlowChart({ projections }: Props) {
   }, [projections]);
 
   if (data.length === 0) {
-    return (
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body items-center justify-center h-[430px]">
-          <p className="text-base-content/50">No data in this date range</p>
-        </div>
+    const empty = (
+      <div className="items-center justify-center h-[430px] flex">
+        <p className="text-base-content/50">No data in this date range</p>
       </div>
     );
+    return options ? empty : <div className="card bg-base-100 shadow-xl"><div className="card-body">{empty}</div></div>;
   }
 
   const cumulativeData = useMemo(() => {
@@ -99,6 +99,31 @@ export default function CashFlowChart({ projections }: Props) {
       return { ...d, cumulative: Math.round(running * 100) / 100 };
     });
   }, [data]);
+
+  const chart = (
+    <ResponsiveContainer width="100%" height={options?.height ?? 370}>
+      <BarChart data={cumulativeData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+        {(options?.showGrid !== false) && (
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+        )}
+        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+        <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12 }} width={80} />
+        <Tooltip content={<CustomTooltip />} />
+        <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" strokeDasharray="3 3" />
+        <Bar dataKey="net" name="Net Cash Flow" radius={[4, 4, 0, 0]}>
+          {cumulativeData.map((entry, i) => (
+            <Cell
+              key={i}
+              fill={entry.net >= 0 ? "#36d399" : "#f87272"}
+              fillOpacity={0.85}
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
+
+  if (options) return chart;
 
   return (
     <div className="card bg-base-100 shadow-xl">
@@ -112,25 +137,7 @@ export default function CashFlowChart({ projections }: Props) {
             </span>
           </span>
         </div>
-
-        <ResponsiveContainer width="100%" height={370}>
-          <BarChart data={cumulativeData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12 }} width={80} />
-            <Tooltip content={<CustomTooltip />} />
-            <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" strokeDasharray="3 3" />
-            <Bar dataKey="net" name="Net Cash Flow" radius={[4, 4, 0, 0]}>
-              {cumulativeData.map((entry, i) => (
-                <Cell
-                  key={i}
-                  fill={entry.net >= 0 ? "#36d399" : "#f87272"}
-                  fillOpacity={0.85}
-                />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {chart}
       </div>
     </div>
   );

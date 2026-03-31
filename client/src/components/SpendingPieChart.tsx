@@ -7,7 +7,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import type { ProjectionDay } from "../types";
+import type { ProjectionDay, ChartFullscreenOptions } from "../types";
 
 const FALLBACK_PALETTE = [
   "#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4",
@@ -35,6 +35,7 @@ function formatCurrency(value: number): string {
 interface Props {
   projections: ProjectionDay[];
   categoryColors: Record<string, string>;
+  options?: ChartFullscreenOptions;
 }
 
 interface SliceData {
@@ -94,7 +95,7 @@ function renderCustomLabel({
   );
 }
 
-export default function SpendingPieChart({ projections, categoryColors }: Props) {
+export default function SpendingPieChart({ projections, categoryColors, options }: Props) {
   const data = useMemo(() => {
     const totals = new Map<string, number>();
 
@@ -124,14 +125,48 @@ export default function SpendingPieChart({ projections, categoryColors }: Props)
   const totalSpending = data.reduce((s, d) => s + d.value, 0);
 
   if (data.length === 0) {
-    return (
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body items-center justify-center h-[430px]">
-          <p className="text-base-content/50">No expense data in this date range</p>
-        </div>
+    const empty = (
+      <div className="items-center justify-center h-[430px] flex">
+        <p className="text-base-content/50">No expense data in this date range</p>
       </div>
     );
+    return options ? empty : <div className="card bg-base-100 shadow-xl"><div className="card-body">{empty}</div></div>;
   }
+
+  const isFull = options?.pieStyle === "full";
+  const h = options?.height ?? 370;
+  const outerR = Math.min(h * 0.35, 180);
+  const innerR = isFull ? 0 : outerR * 0.5;
+
+  const chart = (
+    <ResponsiveContainer width="100%" height={h}>
+      <PieChart>
+        <Pie
+          data={data}
+          cx="50%"
+          cy="50%"
+          innerRadius={innerR}
+          outerRadius={outerR}
+          paddingAngle={2}
+          dataKey="value"
+          labelLine={false}
+          label={renderCustomLabel}
+        >
+          {data.map((entry, i) => (
+            <Cell key={i} fill={entry.color} stroke="transparent" />
+          ))}
+        </Pie>
+        <Tooltip content={<CustomTooltip />} />
+        <Legend
+          formatter={(value: string) => (
+            <span className="text-sm text-base-content">{value}</span>
+          )}
+        />
+      </PieChart>
+    </ResponsiveContainer>
+  );
+
+  if (options) return chart;
 
   return (
     <div className="card bg-base-100 shadow-xl">
@@ -142,32 +177,7 @@ export default function SpendingPieChart({ projections, categoryColors }: Props)
             Total: {formatCurrency(totalSpending)}
           </span>
         </div>
-
-        <ResponsiveContainer width="100%" height={370}>
-          <PieChart>
-            <Pie
-              data={data}
-              cx="50%"
-              cy="50%"
-              innerRadius={70}
-              outerRadius={140}
-              paddingAngle={2}
-              dataKey="value"
-              labelLine={false}
-              label={renderCustomLabel}
-            >
-              {data.map((entry, i) => (
-                <Cell key={i} fill={entry.color} stroke="transparent" />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-            <Legend
-              formatter={(value: string) => (
-                <span className="text-sm text-base-content">{value}</span>
-              )}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        {chart}
       </div>
     </div>
   );

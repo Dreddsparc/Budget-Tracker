@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import type { ProjectionDay } from "../types";
+import type { ProjectionDay, ChartFullscreenOptions } from "../types";
 
 function formatCurrency(value: number): string {
   return new Intl.NumberFormat("en-US", {
@@ -28,6 +28,7 @@ interface MonthData {
 
 interface Props {
   projections: ProjectionDay[];
+  options?: ChartFullscreenOptions;
 }
 
 function CustomTooltip({
@@ -61,7 +62,7 @@ function CustomTooltip({
   );
 }
 
-export default function IncomeExpenseBarChart({ projections }: Props) {
+export default function IncomeExpenseBarChart({ projections, options }: Props) {
   const data = useMemo(() => {
     const months = new Map<string, { income: number; expenses: number }>();
 
@@ -86,31 +87,39 @@ export default function IncomeExpenseBarChart({ projections }: Props) {
   }, [projections]);
 
   if (data.length === 0) {
-    return (
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body items-center justify-center h-[430px]">
-          <p className="text-base-content/50">No data in this date range</p>
-        </div>
+    const empty = (
+      <div className="items-center justify-center h-[430px] flex">
+        <p className="text-base-content/50">No data in this date range</p>
       </div>
     );
+    return options ? empty : <div className="card bg-base-100 shadow-xl"><div className="card-body">{empty}</div></div>;
   }
+
+  const stacked = options?.barLayout === "stacked";
+
+  const chart = (
+    <ResponsiveContainer width="100%" height={options?.height ?? 370}>
+      <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+        {(options?.showGrid !== false) && (
+          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+        )}
+        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+        <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12 }} width={80} />
+        <Tooltip content={<CustomTooltip />} />
+        <Legend />
+        <Bar dataKey="income" name="Income" fill="#36d399" radius={[4, 4, 0, 0]} stackId={stacked ? "a" : undefined} />
+        <Bar dataKey="expenses" name="Expenses" fill="#f87272" radius={[4, 4, 0, 0]} stackId={stacked ? "a" : undefined} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+
+  if (options) return chart;
 
   return (
     <div className="card bg-base-100 shadow-xl">
       <div className="card-body">
         <h2 className="card-title">Income vs Expenses</h2>
-
-        <ResponsiveContainer width="100%" height={370}>
-          <BarChart data={data} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-            <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-            <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12 }} width={80} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            <Bar dataKey="income" name="Income" fill="#36d399" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expenses" name="Expenses" fill="#f87272" radius={[4, 4, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {chart}
       </div>
     </div>
   );

@@ -40,6 +40,16 @@ There are two different ways an item can be toggled:
 1. Toggle off the one-time expense to see your balance without it.
 2. Check if the timing works better in a different month.
 
+## Fullscreen Charts for Detailed Analysis
+
+When you need a closer look at your data, expand any chart to fullscreen by hovering over the chart card and clicking the expand icon.
+
+- **Zoom Select** is especially useful for drilling into a specific date range. Click two points on the chart to zoom directly to that period. This is a fast way to examine a single pay cycle, a particular month, or the days surrounding a large expense.
+- **Range sliders** at the bottom of fullscreen mode let you fine-tune the visible range by dragging. Combine this with the preset date range buttons to start broad and then narrow down.
+- **Chart-specific toggles** (such as Area vs Line for projections, or Stacked vs Individual for expense trends) give you different visual perspectives on the same data without leaving the view.
+
+Press **Escape** to reset zoom, or press it again to close fullscreen entirely.
+
 ## Date Range Selection Tips
 
 ### Quick Comparisons
