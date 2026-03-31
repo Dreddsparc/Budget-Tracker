@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Budget Tracker — See Where Your Money Is Going</title>
+  <meta name="description" content="A private, local-first personal finance forecasting tool. No bank connections. No cloud. Just you and your money.">
+  <style>
+    :root {
+      --bg: #0f1729;
+      --bg-card: #1a2332;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --green: #36d399;
+      --red: #f87272;
+      --blue: #3b82f6;
+      --amber: #f59e0b;
+      --purple: #a855f7;
+      --border: #2d3748;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+    a { color: var(--green); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 80px 20px 60px;
+      background: linear-gradient(180deg, #0f1729 0%, #1a2744 100%);
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(54, 211, 153, 0.1);
+      border: 1px solid rgba(54, 211, 153, 0.3);
+      color: var(--green);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #e2e8f0, #36d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--text-muted);
+      max-width: 620px;
+      margin: 0 auto 32px;
+    }
+    .hero-buttons { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .btn-primary { background: var(--green); color: #0f1729; }
+    .btn-primary:hover { background: #2bc48a; text-decoration: none; }
+    .btn-outline { background: transparent; border: 2px solid var(--border); color: var(--text); }
+    .btn-outline:hover { border-color: var(--green); text-decoration: none; }
+
+    /* Privacy banner */
+    .privacy {
+      background: rgba(54, 211, 153, 0.05);
+      border-top: 1px solid rgba(54, 211, 153, 0.15);
+      border-bottom: 1px solid rgba(54, 211, 153, 0.15);
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .privacy h2 { font-size: 1.6rem; margin-bottom: 12px; }
+    .privacy-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+      max-width: 900px;
+      margin: 24px auto 0;
+    }
+    .privacy-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      text-align: left;
+    }
+    .privacy-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 1.3rem;
+    }
+    .privacy-icon.shield { background: rgba(54, 211, 153, 0.15); }
+    .privacy-icon.lock { background: rgba(59, 130, 246, 0.15); }
+    .privacy-icon.eye { background: rgba(168, 85, 247, 0.15); }
+    .privacy-icon.cloud { background: rgba(248, 114, 114, 0.15); }
+    .privacy-item h3 { font-size: 0.95rem; margin-bottom: 2px; }
+    .privacy-item p { font-size: 0.85rem; color: var(--text-muted); }
+
+    /* Features */
+    .features {
+      padding: 60px 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .features h2 { text-align: center; font-size: 1.8rem; margin-bottom: 40px; }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .feature-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 14px;
+      font-size: 1.4rem;
+    }
+    .feature-card h3 { font-size: 1.1rem; margin-bottom: 8px; }
+    .feature-card p { font-size: 0.9rem; color: var(--text-muted); }
+
+    /* Quick start */
+    .quickstart {
+      padding: 60px 20px;
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+    }
+    .quickstart-inner { max-width: 700px; margin: 0 auto; }
+    .quickstart h2 { text-align: center; font-size: 1.8rem; margin-bottom: 8px; }
+    .quickstart .subtitle { text-align: center; color: var(--text-muted); margin-bottom: 32px; }
+    .code-block {
+      background: #0d1117;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+      line-height: 1.8;
+    }
+    .code-comment { color: #6a737d; }
+    .code-cmd { color: var(--green); }
+    .step-list { list-style: none; margin-top: 28px; }
+    .step-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+    .step-num {
+      width: 28px;
+      height: 28px;
+      background: rgba(54, 211, 153, 0.15);
+      color: var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    /* CTA */
+    .cta {
+      text-align: center;
+      padding: 60px 20px;
+    }
+    .cta h2 { font-size: 1.6rem; margin-bottom: 12px; }
+    .cta p { color: var(--text-muted); margin-bottom: 24px; max-width: 500px; margin-left: auto; margin-right: auto; }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 20px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+    footer a { color: var(--text-muted); }
+    footer a:hover { color: var(--green); }
+
+    /* SVG icons inline */
+    .icon { width: 20px; height: 20px; }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">100% Local &amp; Private</div>
+    <h1>See where your money is going<br>and where it will be.</h1>
+    <p>A personal finance forecasting tool that projects your bank balance day-by-day. Multiple accounts, interactive charts, actual vs. forecast tracking. All running locally on your machine — your financial data never leaves.</p>
+    <div class="hero-buttons">
+      <a href="https://github.com/Dreddsparc/Budget-Tracker" class="btn btn-primary">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        View on GitHub
+      </a>
+      <a href="https://github.com/Dreddsparc/Budget-Tracker#quick-start" class="btn btn-outline">
+        Quick Start
+      </a>
+    </div>
+  </section>
+
+  <!-- Privacy -->
+  <section class="privacy">
+    <h2>Your Money. Your Machine. Your Privacy.</h2>
+    <p style="color: var(--text-muted); max-width: 600px; margin: 0 auto;">No bank logins. No cloud services. No data collection. Budget Tracker runs entirely on your computer in Docker.</p>
+    <div class="privacy-grid">
+      <div class="privacy-item">
+        <div class="privacy-icon shield">&#128737;</div>
+        <div>
+          <h3>No Bank Connections</h3>
+          <p>Never enter your bank credentials. You manually enter what you want to track — nothing more.</p>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon lock">&#128274;</div>
+        <div>
+          <h3>Runs Locally</h3>
+          <p>Everything runs in Docker on your machine. Your data stays in a local PostgreSQL database.</p>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon eye">&#128064;</div>
+        <div>
+          <h3>No Tracking</h3>
+          <p>No analytics. No telemetry. No cookies. The app doesn't phone home — ever.</p>
+        </div>
+      </div>
+      <div class="privacy-item">
+        <div class="privacy-icon cloud">&#10060;</div>
+        <div>
+          <h3>No Cloud Required</h3>
+          <p>Works offline after setup. No subscription. No server costs. Open source and free forever.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <h2>Everything You Need to Plan Your Finances</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(54, 211, 153, 0.15);">&#128200;</div>
+        <h3>Day-by-Day Balance Projection</h3>
+        <p>See exactly where your balance will be on any future date. The projection engine simulates your income and expenses with 7 recurrence intervals.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(59, 130, 246, 0.15);">&#127974;</div>
+        <h3>Multi-Account Management</h3>
+        <p>Track checking, savings, and more. Set up transfers between accounts — an expense in one automatically appears as income in the other.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(245, 158, 11, 0.15);">&#9989;</div>
+        <h3>Actual vs. Forecast</h3>
+        <p>Record what you actually spent and link it to forecasts. The projection adjusts automatically — forecast where you don't have actuals, reality where you do.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(168, 85, 247, 0.15);">&#128202;</div>
+        <h3>5 Interactive Chart Views</h3>
+        <p>Projection, Spending by Category, Income vs Expenses, Cash Flow, and Expense Trends. Expand any chart to fullscreen with zoom and controls.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(248, 114, 114, 0.15);">&#128269;</div>
+        <h3>Fullscreen Zoom</h3>
+        <p>Expand any chart to full screen. Click two points to zoom into a date range, or use the sliders. Toggle between area/line, grouped/stacked, and more.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(54, 211, 153, 0.15);">&#128196;</div>
+        <h3>Spreadsheet Exchange</h3>
+        <p>Export to Excel, edit in your favorite spreadsheet app, import back. Professional formatting with instructions, validation, and color-coded sheets.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(59, 130, 246, 0.15);">&#127991;</div>
+        <h3>Category System</h3>
+        <p>Organize expenses with custom categories, colors, and descriptions. Charts color-code by category. Rename and it updates everywhere.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(245, 158, 11, 0.15);">&#128176;</div>
+        <h3>Variable Pricing</h3>
+        <p>Track expenses that change over time — rent increases, subscription changes. Add price adjustments with dates and the projection stays accurate.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background: rgba(168, 85, 247, 0.15);">&#129300;</div>
+        <h3>What-If Analysis</h3>
+        <p>Toggle any income or expense on/off to instantly see how it affects your future balance. Plan before you commit.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section class="quickstart">
+    <div class="quickstart-inner">
+      <h2>Up and Running in 60 Seconds</h2>
+      <p class="subtitle">Just Docker and three commands.</p>
+      <div class="code-block">
+        <span class="code-comment"># Clone the repository</span><br>
+        <span class="code-cmd">git clone https://github.com/Dreddsparc/Budget-Tracker.git</span><br>
+        <span class="code-cmd">cd Budget-Tracker</span><br><br>
+        <span class="code-comment"># Set up environment</span><br>
+        <span class="code-cmd">cp .env.example .env</span><br><br>
+        <span class="code-comment"># Launch everything</span><br>
+        <span class="code-cmd">make dev</span>
+      </div>
+      <ul class="step-list">
+        <li>
+          <span class="step-num">1</span>
+          <div>
+            <strong>Docker builds everything</strong> — database, server, and client containers start automatically with hot reload.
+          </div>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <div>
+            <strong>Open <a href="http://localhost:5173">localhost:5173</a></strong> — set your starting balance, add income and expenses.
+          </div>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <div>
+            <strong>See your future</strong> — the projection chart shows your balance trajectory instantly. Toggle items for what-if analysis.
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Tech -->
+  <section class="features" style="padding-bottom: 40px;">
+    <h2>Built With Modern Tech</h2>
+    <div class="features-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+      <div class="feature-card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.8rem; margin-bottom: 8px;">&#9883;</div>
+        <h3>React 19</h3>
+        <p>TypeScript, Tailwind CSS v4, DaisyUI v5</p>
+      </div>
+      <div class="feature-card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.8rem; margin-bottom: 8px;">&#9881;</div>
+        <h3>Express + Prisma</h3>
+        <p>Type-safe API with PostgreSQL</p>
+      </div>
+      <div class="feature-card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.8rem; margin-bottom: 8px;">&#128203;</div>
+        <h3>Recharts</h3>
+        <p>5 chart types with fullscreen zoom</p>
+      </div>
+      <div class="feature-card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.8rem; margin-bottom: 8px;">&#128230;</div>
+        <h3>Docker Compose</h3>
+        <p>One command to run everything</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <h2>Ready to Take Control of Your Finances?</h2>
+    <p>Budget Tracker is open source and free. Contributions, ideas, and feedback are welcome.</p>
+    <div class="hero-buttons">
+      <a href="https://github.com/Dreddsparc/Budget-Tracker" class="btn btn-primary">
+        <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Get Started on GitHub
+      </a>
+      <a href="https://github.com/Dreddsparc/Budget-Tracker/tree/main/docs/user" class="btn btn-outline">
+        Read the Docs
+      </a>
+    </div>
+  </section>
+
+  <footer>
+    <p>
+      <a href="https://github.com/Dreddsparc/Budget-Tracker">GitHub</a> &middot;
+      <a href="https://github.com/Dreddsparc/Budget-Tracker/tree/main/docs/user">User Guide</a> &middot;
+      <a href="https://github.com/Dreddsparc/Budget-Tracker/tree/main/docs/dev">Developer Guide</a> &middot;
+      <a href="https://github.com/Dreddsparc/Budget-Tracker/issues">Report an Issue</a>
+    </p>
+    <p style="margin-top: 8px;">Budget Tracker is open source. Your data is yours. Always.</p>
+  </footer>
+
+</body>
+</html>
