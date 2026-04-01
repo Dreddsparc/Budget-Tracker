@@ -1,10 +1,12 @@
-# Projections Engine
+# :gear: Projections Engine
 
-The projections engine is the core feature of Budget Tracker. It simulates a day-by-day balance starting from the most recent balance snapshot, applying income and expense events based on their configured intervals.
+Deep dive into the balance forecasting algorithm -- the core feature of Budget Tracker. The engine simulates a day-by-day balance starting from the most recent balance snapshot, applying income and expense events based on their configured intervals.
 
 **Source:** `server/src/routes/projections.ts`
 
-## Overview
+---
+
+## :telescope: Overview
 
 The projection pipeline:
 
@@ -15,7 +17,11 @@ The projection pipeline:
 5. Iterate day-by-day from `windowStart` to `windowEnd`, calling `applyDay()` for each date.
 6. Return the `ProjectionDay[]` array.
 
-## Data Types
+> **Pattern:** All database queries in step 2 run concurrently via `Promise.all`. This minimizes latency when fetching the five data sources needed for a projection.
+
+---
+
+## :bookmark_tabs: Data Types
 
 ```typescript
 interface ProjectionEvent {
@@ -50,25 +56,31 @@ interface ActualForDay {
 
 The `ActualForDay` interface represents a single actual spending entry for a specific date, used internally by the projection loop. See [Actual Spending Integration](#actual-spending-integration) for how these are built and consumed.
 
-## Date Window Computation
+---
+
+## :calendar: Date Window Computation
 
 The engine supports two query modes:
 
 **Preset (days):**
-```
+```text
 GET /api/accounts/:id/projections?days=90
 ```
 `windowStart` = today (UTC midnight), `windowEnd` = today + (days - 1). The `days` parameter is capped at `365 * 2` (730 days), defaulting to 90 if not provided or invalid.
 
 **Custom range:**
-```
+```text
 GET /api/accounts/:id/projections?startDate=2026-06-01&endDate=2026-12-31
 ```
 Both dates are parsed as UTC midnight. The window is still capped at 730 days from `windowStart`.
 
 **Future window handling (lines 262-269):** If `windowStart` is after today, the engine must simulate the gap between today and `windowStart` to compute what the balance would be on that date. It runs `applyDay()` for each day in the gap but does not record those days in the output array.
 
-## matchesInterval
+> **Tip:** Use the `days` parameter for simple forecasts. Use `startDate`/`endDate` when you need to inspect a specific future date range -- the engine will still simulate from today to compute the correct starting balance.
+
+---
+
+## :mag: matchesInterval
 
 **Signature:** `matchesInterval(interval: Interval, startDate: Date, checkDate: Date): boolean`
 
@@ -106,7 +118,7 @@ return check.getUTCDate() === start.getUTCDate();
 ```
 Fires on the same day-of-month. For example, if start is the 15th, it fires on the 15th of every subsequent month.
 
-**Edge case:** If the start date is the 31st, this will not fire in months with fewer than 31 days (February, April, etc.). The engine does not attempt end-of-month clamping.
+> **Warning:** If the start date is the 31st, this will not fire in months with fewer than 31 days (February, April, etc.). The engine does not attempt end-of-month clamping.
 
 ### QUARTERLY
 ```typescript
@@ -124,9 +136,11 @@ return check.getUTCMonth() === start.getUTCMonth()
 ```
 Same month and day-of-month. Does not check year difference beyond the pre-check (the start date must be on or before the check date).
 
-**Edge case for Feb 29:** A yearly event starting on Feb 29 will only fire in leap years.
+> **Warning:** A yearly event starting on Feb 29 will only fire in leap years. There is no fallback to Feb 28.
 
-## getEffectiveAmount
+---
+
+## :dollar: getEffectiveAmount
 
 **Signature:** `getEffectiveAmount(item, currentDate): number`
 
@@ -150,7 +164,7 @@ function getEffectiveAmount(item, currentDate) {
 }
 ```
 
-**How it works:** The function walks through adjustments in chronological order. Each adjustment whose `startDate` is on or before `currentDate` becomes the new effective amount. The `break` on a future adjustment is an optimization since the list is sorted ascending.
+> **Pattern:** The function walks through adjustments in chronological order. Each adjustment whose `startDate` is on or before `currentDate` becomes the new effective amount. The `break` on a future adjustment is an optimization since the list is sorted ascending.
 
 **Example:** An expense with base amount $100 and adjustments:
 - Jan 1: $110
@@ -158,7 +172,9 @@ function getEffectiveAmount(item, currentDate) {
 
 On March 15, `getEffectiveAmount` returns $110. On April 1, it returns $120.
 
-## applyDay
+---
+
+## :repeat: applyDay
 
 **Signature:** `applyDay(currentDate, runningBalance, effectiveIncome, effectiveExpenses, incomingTransfers, actualsForDay): { balance, events }`
 
@@ -175,7 +191,7 @@ Income and incoming transfers add to the balance. Expenses subtract from the bal
 
 ### Transfer Filtering in Charts
 
-Transfer expense events have `isTransfer: true` set on the `ProjectionEvent`. The spending analysis charts (SpendingPieChart, IncomeExpenseBarChart, CashFlowChart, ExpenseTrendChart) exclude transfer events from their aggregations since transfers are not real spending -- they are money moving between the user's own accounts. The ProjectionChart and LedgerView include transfers because they affect the account balance.
+Transfer expense events have `isTransfer: true` set on the `ProjectionEvent`. The spending analysis charts (`SpendingPieChart`, `IncomeExpenseBarChart`, `CashFlowChart`, `ExpenseTrendChart`) exclude transfer events from their aggregations since transfers are not real spending -- they are money moving between the user's own accounts. The `ProjectionChart` and `LedgerView` include transfers because they affect the account balance.
 
 ### Balance Rounding
 
@@ -185,7 +201,9 @@ The returned balance is rounded to 2 decimal places to avoid floating-point drif
 return { balance: Math.round(balance * 100) / 100, events };
 ```
 
-## Transfer Income Handling
+---
+
+## :left_right_arrow: Transfer Income Handling
 
 Transfers are expenses in the source account that also appear as income in the target account. The projections endpoint queries incoming transfers with:
 
@@ -217,11 +235,13 @@ The category is set to identify the source:
 const categoryName = `Transfer from ${transfer.sourceAccountName}`;
 ```
 
-## Override System
+---
+
+## :joystick: Override System
 
 Overrides are client-side toggles that temporarily change the `active` state of income or expense items. They are passed as a JSON-encoded query parameter:
 
-```
+```text
 ?overrides=[{"id":"abc-123","active":false}]
 ```
 
@@ -232,9 +252,11 @@ Overrides are client-side toggles that temporarily change the `active` state of 
 
 Overrides are not persisted. They exist only for the duration of the request.
 
-**Client usage:** The override system enables what-if analysis. The user can toggle an income source or expense off in the UI without changing the database, and the chart immediately updates to show the projected impact.
+> **Pattern:** The override system enables what-if analysis. The user can toggle an income source or expense off in the UI without changing the database, and the chart immediately updates to show the projected impact.
 
-## Actual Spending Integration
+---
+
+## :receipt: Actual Spending Integration
 
 The projection engine incorporates recorded actual spending to produce a hybrid forecast that blends real transactions with projected ones.
 
@@ -282,7 +304,9 @@ Actual events use the following name resolution order:
 2. The `name` field from the linked forecast expense.
 3. The fallback string `"Actual spend"`.
 
-## Edge Cases
+---
+
+## :triangular_flag_on_post: Edge Cases
 
 ### No balance snapshot
 If no `BalanceSnapshot` exists for the account, the starting balance defaults to `0`.
@@ -313,3 +337,13 @@ Uses `Math.round` on the millisecond difference to handle DST edge cases:
 const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 ```
 Since all dates are UTC-normalized to midnight, this should always be exact, but `Math.round` provides a safety margin.
+
+---
+
+## Related
+
+- [API Reference](api.md) -- The projections endpoint and query parameters
+- [Database](database.md) -- Schema for IncomeSource, PlannedExpense, PriceAdjustment, ActualSpend
+- [Client Architecture](client-architecture.md) -- How projection data flows to charts and the ledger
+- [Adding Features](adding-features.md) -- How to modify the projection engine or add new event types
+- [Testing](testing.md) -- Recommended test cases for the engine's pure functions

@@ -1,10 +1,12 @@
-# API Reference
+# :electric_plug: API Reference
 
-All endpoints are served by the Express server on port 3001. In development, the Vite proxy forwards `/api` requests from the client (port 5173) to the server automatically.
+Complete REST API reference for the Budget Tracker server. All endpoints are served by Express on port 3001. In development, the Vite proxy forwards `/api` requests from the client (port 5173) to the server automatically.
 
 All request and response bodies use JSON (`Content-Type: application/json`) unless otherwise noted.
 
-## Common Error Response
+---
+
+## :warning: Common Error Response
 
 All endpoints return errors in this shape:
 
@@ -19,7 +21,7 @@ Standard HTTP status codes:
 
 ---
 
-## Accounts
+## :bust_in_silhouette: Accounts
 
 Account management is global (not scoped to another account).
 
@@ -79,13 +81,15 @@ Rename an account.
 
 Delete an account and all its data (balance, income, expenses cascade).
 
+> **Warning:** This permanently deletes the account and all associated data. The deletion cannot be undone.
+
 **Constraint:** Cannot delete the last remaining account. Returns `400` if only one account exists.
 
 **Response:** `204 No Content`
 
 ---
 
-## Balance
+## :bank: Balance
 
 Scoped to an account. Uses `Router({ mergeParams: true })` to access `:accountId`.
 
@@ -123,7 +127,7 @@ Create a new balance snapshot. Does not replace the old one -- all snapshots are
 
 ---
 
-## Income
+## :moneybag: Income
 
 Scoped to an account.
 
@@ -223,11 +227,11 @@ List incoming transfers from other accounts. These are `PlannedExpense` records 
 ]
 ```
 
-Note: The response is a mapped shape, not the raw PlannedExpense. It includes `sourceAccountName` resolved from the expense's owning account.
+> **Tip:** The response is a mapped shape, not the raw PlannedExpense. It includes `sourceAccountName` resolved from the expense's owning account.
 
 ---
 
-## Expenses
+## :receipt: Expenses
 
 Scoped to an account.
 
@@ -308,7 +312,7 @@ Update an expense. All fields are optional.
 }
 ```
 
-**Note:** Setting `isTransfer` to `false` automatically clears `transferToAccountId` to `null`.
+> **Important:** Setting `isTransfer` to `false` automatically clears `transferToAccountId` to `null`.
 
 **Response:** `200 OK` -- Updated expense with `priceAdjustments`.
 
@@ -384,7 +388,7 @@ Delete a price adjustment.
 
 ---
 
-## Actual Spending
+## :credit_card: Actual Spending
 
 Scoped to an account. Records real-world transactions that can optionally link to a forecast expense.
 
@@ -472,7 +476,7 @@ Delete an actual spending record.
 
 ---
 
-## Projections
+## :chart_with_upwards_trend: Projections
 
 Scoped to an account.
 
@@ -496,7 +500,7 @@ Use either `days` or the `startDate`/`endDate` pair. If both are provided, `star
 The window is capped at 2 years (730 days) regardless of the requested range.
 
 **Override format:**
-```
+```text
 ?overrides=[{"id":"uuid-1","active":false},{"id":"uuid-2","active":true}]
 ```
 
@@ -528,7 +532,7 @@ Overrides temporarily change the `active` state of income or expense items for t
 
 ---
 
-## Categories
+## :art: Categories
 
 Global routes -- not scoped to an account.
 
@@ -598,7 +602,7 @@ Delete a category. Sets `category` to `null` on all expenses that used this cate
 
 ---
 
-## Spreadsheet
+## :page_facing_up: Spreadsheet
 
 Scoped to an account. See [Spreadsheet Import/Export](spreadsheet.md) for detailed documentation.
 
@@ -637,7 +641,7 @@ The `errors` array contains non-fatal validation issues. Rows with errors are sk
 
 ---
 
-## Health
+## :heartpulse: Health
 
 ### GET /api/health
 
@@ -647,3 +651,13 @@ The `errors` array contains non-fatal validation issues. Rows with errors are sk
 ```
 
 Used by Docker health checks to determine when the server is ready.
+
+---
+
+## Related
+
+- [Architecture](architecture.md) -- Route mounting and server structure
+- [Projections Engine](projections-engine.md) -- Algorithm details for the projections endpoint
+- [Database](database.md) -- Schema reference for all models used by these endpoints
+- [Client Architecture](client-architecture.md) -- How the client calls these endpoints
+- [Spreadsheet Import/Export](spreadsheet.md) -- Detailed workbook structure and import logic

@@ -1,17 +1,21 @@
-# Spreadsheet Import/Export
+# :page_facing_up: Spreadsheet Import/Export
 
-The spreadsheet system provides Excel-based data exchange using ExcelJS. Users can export their account data to a `.xlsx` file, modify it externally, and re-import it.
+Complete reference for the Excel-based data exchange system. Users can export their account data to a `.xlsx` file, modify it externally, and re-import it. The system uses ExcelJS for workbook generation and parsing.
 
 **Source:** `server/src/routes/spreadsheet.ts`
 
-## Overview
+---
+
+## :telescope: Overview
 
 - **Export** generates a 6-sheet workbook with formatting, validation, frozen panes, and auto-filters.
 - **Import** parses each sheet, validates fields, and performs create/update/delete operations scoped to the account.
 - File upload uses multer with memory storage and a 10 MB size limit.
 - Transfer targets are resolved by account name (not ID) during import.
 
-## Export Workbook Structure
+---
+
+## :outbox_tray: Export Workbook Structure
 
 The exported workbook contains 6 sheets:
 
@@ -82,7 +86,9 @@ Includes 15 blank pre-formatted rows. On import, if Expense ID is blank, the sys
 
 Includes 10 blank pre-formatted rows.
 
-## Formatting System
+---
+
+## :art: Formatting System
 
 ### Color Palette
 
@@ -120,7 +126,9 @@ All data sheets (Income, Expenses, Price Adjustments, Categories) have:
 - **Frozen panes:** Row 1 frozen (`ySplit: 1`), so headers remain visible during scrolling.
 - **Auto-filters:** Applied to the header row for sorting and filtering.
 
-## Import Logic
+---
+
+## :inbox_tray: Import Logic
 
 ### General Pattern
 
@@ -132,6 +140,8 @@ For each sheet, the import follows the same pattern:
 4. **Match by ID:** If column A has an ID that exists in the database, the row is an **update**. If the ID is blank or not found, the row is a **create**.
 5. **Detect deletions:** Any existing database IDs not seen in the spreadsheet rows are **deleted**.
 6. All operations run in parallel using `Promise.all`.
+
+> **Pattern:** The import is additive-by-default for rows (create or update) but uses the absence of known IDs to detect deletions. This means removing a row from the spreadsheet will delete it from the database on import.
 
 ### Balance Import
 
@@ -150,6 +160,8 @@ Same validation as income, plus:
 - `category` defaults to `null` if empty.
 - Transfer target resolution: if `isTransfer` is true and a transfer account name is provided, the system looks up the account by name (case-insensitive). If the account is not found, the expense is imported as a regular expense and an error message is added.
 - `isTransfer` is set to `false` if the transfer target cannot be resolved.
+
+> **Warning:** If a transfer target account name is misspelled or the account does not exist, the expense will be imported as a regular (non-transfer) expense. Check the `errors` array in the import response for warnings about unresolved transfers.
 
 ### Price Adjustment Import
 
@@ -178,7 +190,9 @@ function parseDate(val: unknown): string | null {
 }
 ```
 
-## Account Scoping
+---
+
+## :lock: Account Scoping
 
 All import operations are scoped to the active account (`accountId` from the URL parameter):
 
@@ -190,7 +204,9 @@ All import operations are scoped to the active account (`accountId` from the URL
 
 This means importing a spreadsheet for Account A will never modify data belonging to Account B.
 
-## Round-Trip Safety
+---
+
+## :arrows_counterclockwise: Round-Trip Safety
 
 The export/import cycle is designed to be safe:
 
@@ -199,9 +215,11 @@ The export/import cycle is designed to be safe:
 3. Rows without IDs are treated as new records.
 4. Rows removed from the spreadsheet trigger deletions.
 
-**Caution:** If you export from Account A and import into Account B, the IDs will not match any records in Account B, so all rows will be treated as creates (and any existing Account B data will be deleted since those IDs are not in the spreadsheet). Always import back into the same account that was exported.
+> **Warning:** If you export from Account A and import into Account B, the IDs will not match any records in Account B, so all rows will be treated as creates (and any existing Account B data will be deleted since those IDs are not in the spreadsheet). Always import back into the same account that was exported.
 
-## File Size Limit
+---
+
+## :floppy_disk: File Size Limit
 
 The multer configuration limits uploads to 10 MB:
 
@@ -213,3 +231,12 @@ const upload = multer({
 ```
 
 The file is loaded entirely into memory as a buffer before being parsed by ExcelJS.
+
+---
+
+## Related
+
+- [API Reference](api.md) -- The spreadsheet export/import endpoints
+- [Database](database.md) -- Schema for the models that are exported and imported
+- [Adding Features](adding-features.md) -- How to add new columns to the spreadsheet when adding fields
+- [Client Architecture](client-architecture.md) -- The SpreadsheetControls component

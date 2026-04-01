@@ -1,6 +1,10 @@
-# Expenses
+# :credit_card: Expenses
+
+Everything you need to know about adding, editing, and managing your planned expenses.
 
 Expenses represent money going out of an account. These can be recurring bills, one-time purchases, subscriptions, or any planned spending.
+
+---
 
 ## Adding an Expense
 
@@ -16,6 +20,8 @@ Expenses represent money going out of an account. These can be recurring bills, 
    - **Category** (optional): Assign a category to organize this expense. See [Categories](categories.md).
 3. Click **Add** to save.
 
+---
+
 ## Editing an Expense
 
 1. Find the expense in the Forecast Expenses panel.
@@ -24,12 +30,16 @@ Expenses represent money going out of an account. These can be recurring bills, 
 4. Make your changes.
 5. Click **Update** to save, or **Cancel** to discard.
 
+---
+
 ## Deleting an Expense
 
 1. Find the expense in the Forecast Expenses panel.
 2. Click the **Del** button on its row.
 
 The item is removed immediately without a confirmation prompt.
+
+---
 
 ## Toggling Active/Inactive
 
@@ -39,6 +49,8 @@ Each expense has a toggle switch on the left side of its row.
 - **Inactive (off)**: The expense is excluded from projections. The row appears faded.
 
 Like income toggles, this change is saved to the database and persists across sessions.
+
+---
 
 ## How Expenses Are Grouped
 
@@ -52,6 +64,8 @@ Expenses are organized into collapsible category groups in the panel:
 ### Quick Color Change
 
 Each category header has a small color circle on the right side. Click it to open a color picker and change that category's color without opening the full category management modal.
+
+---
 
 ## Variable Pricing
 
@@ -90,6 +104,8 @@ For example, if your base price is $100, you add an adjustment to $120 starting 
 
 In the price schedule, click the **x** button next to any adjustment to remove it. The base price remains unaffected.
 
+---
+
 ## End Dates
 
 If an expense has an end date, it stops appearing in projections after that date. The end date is shown on the expense row as "ends [date]."
@@ -100,9 +116,13 @@ This is useful for:
 - Loan payments with a known payoff date
 - Temporary expenses like a rental while traveling
 
+---
+
 ## Linking to Actual Spending
 
 Expenses can be linked to actual spending entries. When you record a real transaction in the Actual Spending panel and select a forecast expense from the dropdown, that actual amount replaces the forecast amount in the projection for that day. This lets your chart reflect what you really spent instead of what you planned to spend. See [Actual Spending](actual-spending.md) for full details.
+
+---
 
 ## Collapsible Panel
 
@@ -112,3 +132,13 @@ The Forecast Expenses panel works the same way as the income panel:
 - When collapsed, the panel shows the total of all active expenses for the current calendar month (labeled "this month"). This total reflects how many times each expense actually fires during the month based on its interval and start date, rather than simply summing the per-occurrence amounts.
 
 For example, a $30/week expense that fires four times in the current month displays as approximately $120, not $30.
+
+---
+
+## See Also
+
+- [Income](income.md) -- Managing the income side of your budget
+- [Categories](categories.md) -- Organizing expenses into groups with custom colors
+- [Actual Spending](actual-spending.md) -- Recording real transactions and comparing to forecasts
+- [Transfers](transfers.md) -- Marking an expense as a transfer to another account
+- [Tips and Workflows](tips.md) -- Variable bill handling and what-if scenarios

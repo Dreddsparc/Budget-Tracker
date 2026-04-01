@@ -1,6 +1,10 @@
-# Charts
+# :bar_chart: Charts
+
+A visual guide to every chart type in Budget Tracker -- what they show, how to read them, and when to reach for each one.
 
 Budget Tracker includes five chart types, each offering a different perspective on your financial data. Switch between them using the dropdown menu next to the Charts/Ledger toggle at the top of the page.
+
+---
 
 ## Switching Chart Types
 
@@ -17,6 +21,8 @@ All charts respect the currently selected date range. See the Date Range section
 ---
 
 ## Projection Chart
+
+![Full dashboard with projection chart](../screenshots/dashboard.png)
 
 **What it shows:** Your projected account balance over time, plotted day by day as an area chart.
 
@@ -40,6 +46,8 @@ All charts respect the currently selected date range. See the Date Range section
 
 ## Spending by Category Chart
 
+![Spending by Category donut chart](../screenshots/spending-pie.png)
+
 **What it shows:** A donut (ring) chart breaking down your total expenses by category over the selected date range. Transfers between accounts are excluded since they are not real spending -- only actual expenses appear.
 
 **When to use it:** Use it to understand where your money is going. Helpful for identifying your largest spending categories and finding areas to cut back.
@@ -58,6 +66,8 @@ All charts respect the currently selected date range. See the Date Range section
 ---
 
 ## Income vs Expenses Chart
+
+![Income vs Expenses grouped bar chart](../screenshots/income-vs-expenses.png)
 
 **What it shows:** Monthly grouped bar chart comparing total income against total expenses. Transfers between accounts are excluded from the expense totals.
 
@@ -78,6 +88,8 @@ All charts respect the currently selected date range. See the Date Range section
 
 ## Cash Flow Chart
 
+![Monthly Cash Flow bar chart](../screenshots/cash-flow.png)
+
 **What it shows:** Monthly net cash flow as vertical bars, plus a running cumulative total. Transfers between accounts are excluded from expense totals.
 
 **When to use it:** Use it to see which months you have a surplus and which months you have a deficit. The cumulative line shows whether you are trending up or down over time.
@@ -96,6 +108,8 @@ All charts respect the currently selected date range. See the Date Range section
 ---
 
 ## Expense Trends Chart
+
+![Expense Trends stacked area chart](../screenshots/expense-trends.png)
 
 **What it shows:** A stacked area chart of your expenses over time, broken down by category and smoothed into weekly intervals. Transfers between accounts are excluded.
 
@@ -117,6 +131,8 @@ All charts respect the currently selected date range. See the Date Range section
 
 ## Fullscreen Mode
 
+![Fullscreen projection chart with tooltip and sliders](../screenshots/fullscreen-chart.png)
+
 Any chart can be expanded to fill the entire browser window for detailed analysis. Fullscreen mode provides larger visuals, interactive zoom controls, and chart-specific display options.
 
 ### Opening and Closing Fullscreen
@@ -133,7 +149,7 @@ When a chart is in fullscreen, the view consists of:
 - **Chart area** in the center -- the chart rendered at maximum height and width.
 - **Range sliders** at the bottom (time-series charts only) -- two sliders for controlling the visible date range.
 
-The Spending by Category chart does not have range sliders because it is not a time-series chart.
+> **Note:** The Spending by Category chart does not have range sliders because it is not a time-series chart.
 
 ### Zoom Select (Click-to-Zoom)
 
@@ -180,7 +196,7 @@ Each chart type may have a toggle button in the fullscreen toolbar that changes 
 | Expense Trends | Stacked / Individual | Stacked areas or separate lines per category |
 | Cash Flow | -- | No additional controls |
 
-These toggles are only available in fullscreen mode.
+> **Tip:** These toggles are only available in fullscreen mode. Try switching between display styles to find the view that makes the data easiest to understand for your current question.
 
 ---
 
@@ -210,3 +226,13 @@ Click one of the preset buttons to quickly set a range starting from today:
 3. Click **Apply** (for manual date inputs) or simply select a month/shortcut to apply immediately.
 
 When a custom range is active and the custom panel is closed, the selected date range is displayed as text (e.g., "Mar 1, 2026 -- May 31, 2026").
+
+---
+
+## See Also
+
+- [Getting Started](getting-started.md) -- Reading your first projection chart
+- [Ledger](ledger.md) -- The table-based alternative to charts
+- [Categories](categories.md) -- How category colors appear in charts
+- [Actual Spending](actual-spending.md) -- How actual transactions appear in the projection chart
+- [Tips and Workflows](tips.md) -- Fullscreen tips, date range strategies, and chart-based workflows

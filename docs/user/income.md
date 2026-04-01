@@ -1,6 +1,10 @@
-# Income
+# :heavy_dollar_sign: Income
+
+Your guide to adding, managing, and understanding income sources in Budget Tracker.
 
 Income sources represent money coming into an account. This could be a salary, freelance payments, rental income, or any other regular or one-time payment you expect to receive.
+
+---
 
 ## Adding an Income Source
 
@@ -13,6 +17,8 @@ Income sources represent money coming into an account. This could be a salary, f
 3. Click **Add** to save.
 
 The new income source appears in the list, and all charts and the ledger update immediately.
+
+---
 
 ## Understanding Intervals
 
@@ -30,6 +36,8 @@ The interval determines how often an income source repeats in your projections:
 
 > **Tip:** For a paycheck you receive every two weeks, use **Biweekly**. For a paycheck on the 1st and 15th of each month, create two separate Monthly income entries.
 
+---
+
 ## Editing an Income Source
 
 1. Find the income source in the Forecast Income panel.
@@ -38,12 +46,16 @@ The interval determines how often an income source repeats in your projections:
 4. Make your changes.
 5. Click **Update** to save, or **Cancel** to discard.
 
+---
+
 ## Deleting an Income Source
 
 1. Find the income source in the Forecast Income panel.
 2. Click the **Del** button on its row.
 
 The item is removed immediately. There is no confirmation prompt, so be sure before clicking.
+
+---
 
 ## Toggling Active/Inactive
 
@@ -56,6 +68,8 @@ Toggling is saved to the database -- it persists across sessions and devices. Th
 
 > **Tip:** Use the toggle to "pause" an income source you expect to resume later, rather than deleting it and recreating it.
 
+---
+
 ## Incoming Transfers
 
 If another account has a transfer set up that sends money to the account you are currently viewing, those transfers appear at the bottom of the Forecast Income panel under a heading like "Transfer from Checking."
@@ -67,6 +81,8 @@ If another account has a transfer set up that sends money to the account you are
 
 To modify or remove an incoming transfer, switch to the source account and edit or delete the expense that created it. See [Transfers](transfers.md) for details.
 
+---
+
 ## Collapsible Panel
 
 The Forecast Income panel can be collapsed to save screen space.
@@ -76,3 +92,12 @@ The Forecast Income panel can be collapsed to save screen space.
 - Click the title again to expand and see all income sources.
 
 For example, a biweekly paycheck of $2,000 displays as $4,000 in a month where two pay dates fall, not $2,000.
+
+---
+
+## See Also
+
+- [Getting Started](getting-started.md) -- Adding your first income source
+- [Expenses](expenses.md) -- Managing the other side of your budget
+- [Transfers](transfers.md) -- How transfers appear as income in the target account
+- [Tips and Workflows](tips.md) -- What-if analysis with income toggles

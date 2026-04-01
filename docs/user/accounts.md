@@ -1,6 +1,10 @@
-# Accounts
+# :bank: Accounts
+
+Everything you need to know about managing your financial accounts in Budget Tracker.
 
 Budget Tracker supports multiple accounts, so you can separately track your checking account, savings account, or any other financial account. Each account has its own balance, income sources, expenses, and projections.
+
+---
 
 ## Switching Between Accounts
 
@@ -12,6 +16,8 @@ The account selector is in the center of the navigation bar at the top of the pa
 The page updates immediately to show that account's balance, income, expenses, and projections.
 
 > **Note:** Your account selection is remembered in your browser. When you return to Budget Tracker later, it opens to the last account you were viewing.
+
+---
 
 ## Managing Accounts
 
@@ -48,6 +54,8 @@ Deleting an account permanently removes all of its data, including its balance, 
 
 In the account management modal, the currently active account is highlighted and displays an "Active" badge next to its name.
 
+---
+
 ## How Accounts Stay Separate
 
 Each account is completely independent:
@@ -58,3 +66,11 @@ Each account is completely independent:
 - **Projections**: Charts and the ledger only show data for the currently selected account.
 - **Transfers**: The exception -- transfers connect two accounts. See [Transfers](transfers.md) for details.
 - **What-if overrides**: Toggling items on/off for what-if analysis resets when you switch accounts.
+
+---
+
+## See Also
+
+- [Getting Started](getting-started.md) -- Initial setup and your first account
+- [Transfers](transfers.md) -- Move money between accounts
+- [Tips and Workflows](tips.md) -- What-if analysis and account comparison workflows

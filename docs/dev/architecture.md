@@ -1,10 +1,14 @@
-# System Architecture
+# :building_construction: System Architecture
 
-## Overview
+A high-level overview of the Budget Tracker system: how the monorepo is structured, how data flows between services, and how the technology stack fits together.
+
+---
+
+## :telescope: Overview
 
 Budget Tracker is a monorepo containing two independent Node.js projects -- `client/` and `server/` -- orchestrated by Docker Compose. There are no shared packages or code between them; the client-side TypeScript types in `client/src/types.ts` are manually kept in sync with the Prisma schema on the server.
 
-```
+```text
                  Browser
                    |
                    | HTTP (port 5173)
@@ -28,11 +32,15 @@ Budget Tracker is a monorepo containing two independent Node.js projects -- `cli
               +---------+
 ```
 
-## Monorepo Structure
+> **Pattern:** The client never talks directly to the database. All data access goes through the Express API, which uses Prisma as the sole data access layer.
+
+---
+
+## :file_cabinet: Monorepo Structure
 
 Each project is self-contained with its own `package.json`, `tsconfig.json`, and `Dockerfile`. The root `docker-compose.yml` and `Makefile` tie them together.
 
-```
+```text
 Budget-Tracker/
   docker-compose.yml
   Makefile
@@ -67,7 +75,9 @@ Budget-Tracker/
         spreadsheet.ts     # Excel export/import
 ```
 
-## Data Flow
+---
+
+## :arrows_counterclockwise: Data Flow
 
 ### Write Path (user creates an income source)
 
@@ -89,13 +99,15 @@ Budget-Tracker/
 5. The resulting `ProjectionDay[]` array is returned as JSON.
 6. `App.tsx` stores it in `projections` state, which flows as props to all chart components and `LedgerView`.
 
-## Server Architecture
+---
+
+## :satellite_antenna: Server Architecture
 
 ### Route Mounting (`server/src/index.ts`)
 
 The Express app mounts route modules at specific path prefixes. All account-scoped routes use `Router({ mergeParams: true })` so they can access `:accountId` from the parent path.
 
-```
+```text
 /api/accounts                          -> accounts.ts (no mergeParams -- global)
 /api/accounts/:accountId/balance       -> balance.ts
 /api/accounts/:accountId/income        -> income.ts
@@ -107,11 +119,15 @@ The Express app mounts route modules at specific path prefixes. All account-scop
 /api/health                            -> inline handler
 ```
 
+> **Pattern:** Account-scoped routes use `Router({ mergeParams: true })` to inherit `:accountId` from the parent mount path. This avoids repeating the parameter in every route definition.
+
 ### Database Access
 
 All routes import the singleton Prisma client from `server/src/lib/prisma.ts`. There is no ORM abstraction layer, service layer, or repository pattern -- routes call Prisma directly.
 
-## Client Architecture
+---
+
+## :desktop_computer: Client Architecture
 
 The client is a single-page application with no client-side router. All state lives in `App.tsx` and flows down via props. See [Client Architecture](client-architecture.md) for a detailed breakdown.
 
@@ -132,7 +148,11 @@ proxy: {
 },
 ```
 
-## Docker Orchestration
+> **Important:** The proxy target uses the Docker service name `server`, not `localhost`. If running outside Docker, update this to `http://localhost:3001`.
+
+---
+
+## :whale: Docker Orchestration
 
 Three services run in Docker Compose:
 
@@ -144,9 +164,12 @@ Three services run in Docker Compose:
 
 Startup sequence: database starts first, then server (which runs `prisma db push`, `prisma generate`, seed, and `tsx watch`), then client (Vite dev server). See [Docker Setup](docker.md) for full details.
 
-## Technology Stack
+---
+
+## :hammer_and_wrench: Technology Stack
 
 ### Server
+
 - **Runtime**: Node.js 20 (Alpine)
 - **Framework**: Express 4
 - **ORM**: Prisma 6
@@ -156,8 +179,18 @@ Startup sequence: database starts first, then server (which runs `prisma db push
 - **Dev Server**: tsx watch (hot reload)
 
 ### Client
+
 - **Framework**: React 19
 - **Build Tool**: Vite
 - **CSS**: Tailwind CSS v4 + DaisyUI v5
 - **Charts**: Recharts
 - **Language**: TypeScript 5
+
+---
+
+## Related
+
+- [Database](database.md) -- Full schema reference with models, relations, and migration strategy
+- [API Reference](api.md) -- Complete endpoint documentation
+- [Client Architecture](client-architecture.md) -- Detailed component tree and state management
+- [Docker Setup](docker.md) -- Container configuration, volume mounts, and Makefile commands

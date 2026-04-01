@@ -1,6 +1,10 @@
-# Categories
+# :label: Categories
+
+Everything you need to know about managing your expense categories -- from creating and color-coding them to understanding how they appear across the app.
 
 Categories help you organize your expenses into groups like "Housing", "Food", "Transportation", or anything that makes sense for your budget. Categories also control the colors used in charts.
+
+---
 
 ## How Categories Work
 
@@ -8,6 +12,8 @@ Categories help you organize your expenses into groups like "Housing", "Food", "
 - Expenses with the same category are grouped together in the Forecast Expenses panel under a collapsible header.
 - Categories are shared across all accounts.
 - Charts like Spending by Category, Projection, and Expense Trends use category colors to distinguish different types of spending.
+
+---
 
 ## Assigning a Category to an Expense
 
@@ -28,6 +34,8 @@ The category picker modal includes:
 - **Create new section**: At the bottom, there is a section to create a new category on the spot. Type a name and click **Use** to create it and assign it immediately.
 
 > **Tip:** If you search for a name that does not exist yet, the "create new" section at the bottom will suggest creating it. You can also just type the name in the create field and press Use.
+
+---
 
 ## Managing Categories
 
@@ -81,7 +89,9 @@ Descriptions appear in the category picker when assigning categories to expenses
 3. A confirmation message appears: "Delete [name]? Expenses using it will become uncategorized."
 4. Click **Delete** to confirm, or **Cancel** to keep it.
 
-Deleting a category does not delete any expenses. Expenses that were in the deleted category are moved to "Uncategorized."
+> **Important:** Deleting a category does not delete any expenses. Expenses that were in the deleted category are moved to "Uncategorized."
+
+---
 
 ## Category Colors in Charts
 
@@ -93,6 +103,16 @@ Category colors appear in several charts:
 
 If you have not assigned a color, a default color is generated automatically based on the category name.
 
+---
+
 ## Expenses Without a Category
 
 Expenses that do not have a category assigned are grouped under "Uncategorized" at the bottom of the expenses panel. They still appear in charts -- they just use a default color.
+
+---
+
+## See Also
+
+- [Expenses](expenses.md) -- Assigning categories when adding or editing expenses
+- [Charts](charts.md) -- How category colors appear across all chart types
+- [Spreadsheet Import/Export](spreadsheet.md) -- The Category Colors sheet in your export

@@ -1,6 +1,10 @@
-# Actual Spending
+# :receipt: Actual Spending
+
+Your guide to recording real transactions, linking them to forecasts, and tracking what you actually spent vs. what you planned.
 
 Actual spending entries let you record real transactions as they happen -- the amount you actually paid, not what you planned to pay. When you link an actual to a forecast expense, the projection engine uses the real amount instead of the estimate, so your balance chart reflects reality.
+
+---
 
 ## Why Use Actual Spending
 
@@ -10,6 +14,8 @@ Forecasts are estimates. Your weekly grocery bill might be budgeted at $100, but
 - You can compare actual spending against forecasts to spot patterns of over- or under-spending.
 - Future forecast amounts remain unchanged, so the projection still estimates ahead while grounding the past in real data.
 
+---
+
 ## The Actual Spending Panel
 
 The Actual Spending panel appears below the Forecast Income and Forecast Expenses grid. It has an amber (warning) color theme to visually distinguish it from forecast panels.
@@ -17,6 +23,8 @@ The Actual Spending panel appears below the Forecast Income and Forecast Expense
 - The panel starts **collapsed** by default.
 - Click the panel title ("Actual Spending") to expand it.
 - Click the title again to collapse it.
+
+---
 
 ## Adding an Actual Spending Entry
 
@@ -31,6 +39,8 @@ The Actual Spending panel appears below the Forecast Income and Forecast Expense
 
 The entry appears in the Actual Spending panel, grouped by date.
 
+---
+
 ## How Actuals Are Displayed
 
 Actual spending entries are grouped by date, with the newest dates first. Each entry shows:
@@ -39,6 +49,8 @@ Actual spending entries are grouped by date, with the newest dates first. Each e
 - The note, if one was entered.
 - A badge showing the linked forecast expense name, if linked.
 - A category badge, if a category is assigned.
+
+---
 
 ## Linking to Forecast Expenses
 
@@ -74,6 +86,8 @@ You have a forecast expense "Breakfast" set to $30/week, firing every Monday.
 
 Future Mondays beyond your recorded actuals continue to use the $30 forecast.
 
+---
+
 ## How Actuals Affect Projections
 
 The replacement logic follows these rules:
@@ -85,6 +99,8 @@ The replacement logic follows these rules:
 
 > **Note:** Actuals only affect the specific day they are recorded on. Recording an actual for one week does not change the forecast for any other week.
 
+---
+
 ## Editing an Actual
 
 1. Find the entry in the Actual Spending panel.
@@ -93,12 +109,16 @@ The replacement logic follows these rules:
 4. Make your changes.
 5. Click **Update** to save, or **Cancel** to discard.
 
+---
+
 ## Deleting an Actual
 
 1. Find the entry in the Actual Spending panel.
 2. Click the **Del** button on its row.
 
 The entry is removed immediately. The projection reverts to using the forecast amount for that day (if the actual was linked to a forecast expense).
+
+---
 
 ## Visual Indicators
 
@@ -117,7 +137,9 @@ In the ledger table, actual spending entries have:
 
 These indicators appear regardless of whether the actual is linked to a forecast or standalone.
 
-## Tips
+---
+
+## Tips for Actual Spending
 
 ### When to Record Actuals
 
@@ -144,3 +166,12 @@ Record actuals as frequently as suits your workflow. Some approaches:
 - **Leave an actual unlinked** when the transaction is a one-off purchase or does not match any forecast. The actual still appears in the projection as a standalone expense.
 
 > **Tip:** If you find yourself frequently recording unlinked actuals for the same type of purchase, consider creating a forecast expense for it. This gives you better projections and a baseline to compare against.
+
+---
+
+## See Also
+
+- [Expenses](expenses.md) -- Setting up the forecast expenses that actuals link to
+- [Charts](charts.md) -- How actuals appear in the projection chart tooltip
+- [Ledger](ledger.md) -- How actuals appear with amber dots and badges in the table
+- [Tips and Workflows](tips.md) -- Workflows for recording actuals and spotting spending patterns

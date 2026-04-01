@@ -1,6 +1,10 @@
-# Testing
+# :test_tube: Testing
 
-## Current Status
+Current testing status, recommended frameworks, setup instructions, and detailed test cases for the most critical areas of the application.
+
+---
+
+## :clipboard: Current Status
 
 No test framework is currently configured for either the server or client projects. There are no test files, no test scripts in `package.json`, and no CI pipeline.
 
@@ -10,7 +14,11 @@ Type checking is available via:
 make typecheck    # Runs tsc --noEmit on both server and client
 ```
 
-## Recommended Test Strategy
+> **Tip:** Run `make typecheck` frequently during development. It is the only automated quality check currently in place.
+
+---
+
+## :bulb: Recommended Test Strategy
 
 ### Framework Recommendations
 
@@ -65,11 +73,15 @@ export default defineConfig({
 });
 ```
 
-## Key Areas to Test
+---
+
+## :dart: Key Areas to Test
 
 ### Priority 1: Projection Engine
 
 The projection engine is the most critical and complex code in the application. It is also the most testable because `matchesInterval`, `getEffectiveAmount`, and `applyDay` are pure functions with no database dependencies.
+
+> **Pattern:** Pure functions with no side effects are the easiest to test and provide the highest confidence. Start here for maximum impact with minimum setup effort.
 
 **matchesInterval:**
 
@@ -180,6 +192,8 @@ describe("applyDay with actuals", () => {
 - Actual with no note and no linked forecast (should use "Actual spend" fallback name)
 - actualsMap with dates outside the projection window (should be ignored)
 
+---
+
 ### Priority 2: API Routes
 
 Test each route with Supertest. Use a test database to avoid side effects.
@@ -253,6 +267,8 @@ describe("actuals routes", () => {
 });
 ```
 
+---
+
 ### Priority 3: Spreadsheet Import/Export
 
 Test the round-trip: export, parse the workbook, verify sheet contents, re-import, verify database state.
@@ -282,6 +298,8 @@ describe("spreadsheet export", () => {
 - Re-import of exported data is idempotent
 - Account scoping prevents cross-account data modification
 
+---
+
 ### Priority 4: Client Components
 
 Use React Testing Library for component behavior:
@@ -305,7 +323,9 @@ describe("DateRangeBar", () => {
 - API error handling
 - Form validation in EntryForm
 
-## Test Database Strategy
+---
+
+## :floppy_disk: Test Database Strategy
 
 For API and spreadsheet tests, use a separate PostgreSQL database:
 
@@ -322,7 +342,11 @@ test-client:
 	$(CLIENT) npx vitest run
 ```
 
-## Extracting Functions for Testing
+> **Warning:** Never run tests against the development database. Use a dedicated test database to avoid data corruption.
+
+---
+
+## :scissors: Extracting Functions for Testing
 
 The projection engine functions (`matchesInterval`, `getEffectiveAmount`, `applyDay`) are currently defined inside `server/src/routes/projections.ts` as module-level functions but are not exported. To test them, you have two options:
 
@@ -330,4 +354,14 @@ The projection engine functions (`matchesInterval`, `getEffectiveAmount`, `apply
 
 2. **Export from the route file:** Add named exports alongside the default router export. This is simpler but mixes concerns.
 
-Option 1 is recommended as it separates the computation logic from the HTTP layer.
+> **Tip:** Option 1 (extracting to `server/src/lib/projections.ts`) is recommended. It separates the computation logic from the HTTP layer, making the functions independently testable and reusable.
+
+---
+
+## Related
+
+- [Projections Engine](projections-engine.md) -- The engine internals that are the highest-priority test target
+- [API Reference](api.md) -- Endpoint behavior to validate with integration tests
+- [Spreadsheet Import/Export](spreadsheet.md) -- Round-trip behavior to test
+- [Client Architecture](client-architecture.md) -- Component tree and data flow for UI tests
+- [Adding Features](adding-features.md) -- Checklist includes verifying TypeScript compilation

@@ -1,6 +1,10 @@
-# Tips and Workflows
+# :bulb: Tips and Workflows
+
+Practical techniques, what-if scenarios, and ready-made workflows to help you get the most out of Budget Tracker.
 
 This page covers practical techniques, what-if analysis, and common workflows to get the most out of Budget Tracker.
+
+---
 
 ## What-If Analysis with Toggles
 
@@ -40,6 +44,8 @@ There are two different ways an item can be toggled:
 1. Toggle off the one-time expense to see your balance without it.
 2. Check if the timing works better in a different month.
 
+---
+
 ## Fullscreen Charts for Detailed Analysis
 
 When you need a closer look at your data, expand any chart to fullscreen by hovering over the chart card and clicking the expand icon.
@@ -48,7 +54,9 @@ When you need a closer look at your data, expand any chart to fullscreen by hove
 - **Range sliders** at the bottom of fullscreen mode let you fine-tune the visible range by dragging. Combine this with the preset date range buttons to start broad and then narrow down.
 - **Chart-specific toggles** (such as Area vs Line for projections, or Stacked vs Individual for expense trends) give you different visual perspectives on the same data without leaving the view.
 
-Press **Escape** to reset zoom, or press it again to close fullscreen entirely.
+> **Tip:** Press **Escape** to reset zoom, or press it again to close fullscreen entirely.
+
+---
 
 ## Date Range Selection Tips
 
@@ -68,6 +76,8 @@ Use the custom date range to focus on specific periods:
 - Use the multi-month shortcuts (2mo, 3mo, 6mo) for quarter or half-year planning.
 - Set manual dates to align with your fiscal year, lease term, or any custom period.
 
+---
+
 ## Collapsible Panels
 
 Both the Forecast Income and Forecast Expenses panels can be collapsed by clicking their titles.
@@ -75,6 +85,8 @@ Both the Forecast Income and Forecast Expenses panels can be collapsed by clicki
 - When collapsed, each panel shows its title and the total active amount for the current calendar month (e.g., "$4,500.00 this month"). This total counts how many times each item fires during the month based on its interval and start date.
 - This is useful when you want to focus on the charts or ledger without scrolling past long lists of items.
 - Click the title again to expand and see all entries.
+
+---
 
 ## Updating Your Balance
 
@@ -85,6 +97,8 @@ Your starting balance is the foundation for all projections. Keep it accurate:
 3. Click **Save**.
 
 > **Tip:** Update your balance regularly (weekly or after any large transaction) to keep projections aligned with reality. The projections calculate forward from whatever balance you have set, so an outdated balance makes all future projections inaccurate.
+
+---
 
 ## Common Workflows
 
@@ -133,6 +147,8 @@ See [Expenses - Variable Pricing](expenses.md#variable-pricing) for step-by-step
 2. Use the **Cash Flow** chart on each account to compare monthly surpluses and deficits.
 3. Use the **Income vs Expenses** chart to see which account is healthiest.
 
+---
+
 ## Tracking Actual Spending vs. Forecast
 
 Once your forecast is set up, you can record actual spending as real transactions hit your bank account. This lets the projection chart reflect reality instead of estimates.
@@ -162,6 +178,8 @@ Compare actuals to their linked forecasts to identify patterns:
 
 See [Actual Spending](actual-spending.md) for the complete guide.
 
+---
+
 ## Working with the Spreadsheet
 
 For bulk operations, use the export/import workflow:
@@ -171,3 +189,13 @@ For bulk operations, use the export/import workflow:
 3. **Import** the modified file.
 
 This is faster than editing many items one by one in the app. See [Spreadsheet Import/Export](spreadsheet.md) for complete details.
+
+---
+
+## See Also
+
+- [Getting Started](getting-started.md) -- First-time setup basics
+- [Charts](charts.md) -- Detailed guide to all five chart types and fullscreen mode
+- [Ledger](ledger.md) -- Using the table view for detailed analysis
+- [Actual Spending](actual-spending.md) -- Complete guide to recording real transactions
+- [Spreadsheet Import/Export](spreadsheet.md) -- Bulk editing with Excel or Google Sheets

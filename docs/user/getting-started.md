@@ -1,6 +1,10 @@
-# Getting Started
+# :rocket: Getting Started
 
-This guide walks you through your first time using Budget Tracker, from opening the app to seeing your first balance projection.
+Welcome to Budget Tracker! This guide walks you through your first time using the app, from opening it up to seeing your first balance projection. You will be up and running in just a few minutes.
+
+![Budget Tracker Dashboard](../screenshots/dashboard.png)
+
+---
 
 ## Installing Docker Desktop
 
@@ -35,9 +39,9 @@ docker --version
 
 You should see something like `Docker version 27.x.x`. If you get an error saying the command is not found, Docker Desktop may not be running -- open it from your Applications folder or Start menu and try again.
 
-### Important
+> **Important:** Docker Desktop must be running every time you use Budget Tracker. If you restart your computer, open Docker Desktop before running `make dev`. You will know it is ready when the whale icon appears in your menu bar (macOS) or system tray (Windows).
 
-Docker Desktop must be running every time you use Budget Tracker. If you restart your computer, open Docker Desktop before running `make dev`. You will know it is ready when the whale icon appears in your menu bar (macOS) or system tray (Windows).
+---
 
 ## What You Will Need
 
@@ -46,6 +50,8 @@ Before you start, have an approximate idea of:
 - Your current account balance (checking, savings, or whichever account you want to track first)
 - Your main income sources and how often they occur (weekly, biweekly, monthly, etc.)
 - Your recurring expenses and their amounts
+
+---
 
 ## Step 1: Open the App
 
@@ -102,6 +108,8 @@ After adding income and expenses, look at the projection chart at the top of the
 
 You can change the time range using the preset buttons (30d, 60d, 90d, 6mo, 1yr) or set a custom date range. See [Charts](charts.md) for more detail on all five chart types.
 
+---
+
 ## What to Do Next
 
 Now that you have the basics set up, here are some next steps:
@@ -113,3 +121,11 @@ Now that you have the basics set up, here are some next steps:
 - **Explore the charts**: Switch between five different chart views. See [Charts](charts.md).
 - **Browse the ledger**: See a day-by-day transaction list. See [Ledger](ledger.md).
 - **Record actual spending**: Once you start making real purchases, record them in the Actual Spending panel and link them to your forecast expenses. The projection will use your real amounts instead of estimates. See [Actual Spending](actual-spending.md).
+
+---
+
+## See Also
+
+- [Accounts](accounts.md) -- Set up multiple accounts for checking, savings, and more
+- [Charts](charts.md) -- Explore all five chart types in detail
+- [Tips and Workflows](tips.md) -- Practical techniques and common scenarios

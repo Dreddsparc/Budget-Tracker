@@ -1,8 +1,10 @@
-# Database Schema
+# :floppy_disk: Database Schema
 
-The database is PostgreSQL 16, managed entirely through Prisma ORM. The schema is defined in `server/prisma/schema.prisma`.
+Complete reference for the PostgreSQL database, managed entirely through Prisma ORM. The schema is defined in `server/prisma/schema.prisma`.
 
-## Models
+---
+
+## :card_file_box: Models
 
 ### Account
 
@@ -88,7 +90,7 @@ A recurring or one-time expense. Can also represent a transfer between accounts.
 
 **Indexes:** `@@index([accountId])`, `@@index([transferToAccountId])`
 
-**Transfer mechanics:** When `isTransfer` is true and `transferToAccountId` is set, the expense deducts from the source account and the projection engine adds it as income to the target account. Deleting the target account sets `transferToAccountId` to null (`onDelete: SetNull`) rather than cascading.
+> **Pattern:** When `isTransfer` is true and `transferToAccountId` is set, the expense deducts from the source account and the projection engine adds it as income to the target account. Deleting the target account sets `transferToAccountId` to null (`onDelete: SetNull`) rather than cascading.
 
 ### PriceAdjustment
 
@@ -139,11 +141,13 @@ A recorded real-world transaction. Can optionally link to a `PlannedExpense` to 
 
 **Indexes:** `@@index([accountId])`, `@@index([accountId, date])`, `@@index([forecastExpenseId])`
 
-**Cascade behavior:** Deleting the account cascades to all its actual spends. Deleting the linked forecast expense sets `forecastExpenseId` to null (`onDelete: SetNull`), preserving the actual spend record.
+> **Pattern:** Deleting the account cascades to all its actual spends. Deleting the linked forecast expense sets `forecastExpenseId` to null (`onDelete: SetNull`), preserving the actual spend record.
 
-**Category inheritance:** When creating an actual spend with a `forecastExpenseId` but no explicit `category`, the API auto-inherits the category from the linked forecast expense.
+> **Tip:** When creating an actual spend with a `forecastExpenseId` but no explicit `category`, the API auto-inherits the category from the linked forecast expense.
 
-## Interval Enum
+---
+
+## :repeat: Interval Enum
 
 ```prisma
 enum Interval {
@@ -159,9 +163,11 @@ enum Interval {
 
 Used by both `IncomeSource.interval` and `PlannedExpense.interval`. The projection engine uses this to determine which dates an event fires on. See [Projections Engine](projections-engine.md) for the matching logic.
 
-## Entity Relationship Diagram
+---
 
-```
+## :link: Entity Relationship Diagram
+
+```text
 Account (1) ---< (many) BalanceSnapshot
 Account (1) ---< (many) IncomeSource
 Account (1) ---< (many) PlannedExpense        (via accountId)
@@ -174,7 +180,9 @@ PlannedExpense (1) ---< (many) ActualSpend     (via forecastExpenseId, optional)
 CategoryColor (standalone, linked by name string to PlannedExpense.category)
 ```
 
-## Cascade Behavior
+---
+
+## :boom: Cascade Behavior
 
 | Relationship | On Delete |
 |-------------|-----------|
@@ -186,7 +194,11 @@ CategoryColor (standalone, linked by name string to PlannedExpense.category)
 | Account -> ActualSpend | Cascade |
 | PlannedExpense -> ActualSpend (forecastExpenseId) | SetNull (actual spend preserved, link cleared) |
 
-## Migration Strategy
+> **Warning:** Deleting an account permanently removes all of its balance snapshots, income sources, expenses, price adjustments, and actual spending records. This operation cannot be undone.
+
+---
+
+## :construction: Migration Strategy
 
 ### Development: `prisma db push`
 
@@ -213,7 +225,11 @@ make db-migrate    # Runs: npx prisma migrate dev (interactive, creates migratio
 make db-reset      # Drops and recreates the database (destroys all data)
 ```
 
-## Seed Script
+> **Warning:** `make db-reset` destroys all data in the database. There is no confirmation prompt when run via the Makefile.
+
+---
+
+## :seedling: Seed Script
 
 Located at `server/prisma/seed-accounts.ts`, the seed script runs on every server startup. It is idempotent:
 
@@ -223,7 +239,9 @@ Located at `server/prisma/seed-accounts.ts`, the seed script runs on every serve
 
 The seed script does not create sample income, expenses, or balance data. Those are added through the UI or spreadsheet import.
 
-## Database Connection
+---
+
+## :electric_plug: Database Connection
 
 The connection string is configured via the `DATABASE_URL` environment variable, injected by Docker Compose from the `.env` file. The Prisma client singleton lives at `server/src/lib/prisma.ts`:
 
@@ -234,3 +252,13 @@ export default prisma;
 ```
 
 All route files import this singleton directly. There is no connection pooling configuration beyond Prisma's defaults.
+
+---
+
+## Related
+
+- [Architecture](architecture.md) -- System overview and how the database fits into the stack
+- [Projections Engine](projections-engine.md) -- How the engine queries and uses database records
+- [API Reference](api.md) -- HTTP endpoints that read and write these models
+- [Spreadsheet Import/Export](spreadsheet.md) -- Bulk data exchange via Excel files
+- [Adding Features](adding-features.md) -- How to add new models and fields

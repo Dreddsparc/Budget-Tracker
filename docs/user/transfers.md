@@ -1,6 +1,10 @@
-# Transfers
+# :left_right_arrow: Transfers
+
+Your guide to moving money between accounts and keeping both sides of the ledger in sync.
 
 Transfers let you move money between accounts. A transfer is an expense in the source account and automatic income in the target account, keeping both projections accurate.
+
+---
 
 ## Setting Up a Transfer
 
@@ -19,6 +23,8 @@ Transfers are created as expenses with the transfer option enabled.
 6. Click **Add**.
 
 > **Note:** The transfer toggle only appears if you have more than one account. If you do not see it, create another account first (see [Accounts](accounts.md)).
+
+---
 
 ## How Transfers Appear
 
@@ -55,6 +61,8 @@ For example, if you create a monthly transfer named "Savings Transfer" in your c
 
 This naming convention helps you identify which month each transfer occurrence belongs to when browsing the target account.
 
+---
+
 ## Transfers and Charts
 
 Transfers affect the Projection chart and Ledger (they change your account balance), but they are **excluded** from the spending analysis charts:
@@ -64,7 +72,9 @@ Transfers affect the Projection chart and Ledger (they change your account balan
 - **Cash Flow** -- transfers are not counted in the expense side of the net calculation
 - **Expense Trends** -- transfers do not appear in the category breakdown
 
-This is because transfers are not real spending -- they are money moving between your own accounts. The spending charts show only actual expenses.
+> **Note:** This is because transfers are not real spending -- they are money moving between your own accounts. The spending charts show only actual expenses.
+
+---
 
 ## Editing a Transfer
 
@@ -77,6 +87,8 @@ To change a transfer's amount, interval, or other details:
 
 Changes are reflected in both the source and target account projections.
 
+---
+
 ## Deleting a Transfer
 
 1. Switch to the **source account**.
@@ -85,12 +97,16 @@ Changes are reflected in both the source and target account projections.
 
 The transfer is removed from both accounts -- it no longer appears as an expense in the source or as income in the target.
 
+---
+
 ## Toggling a Transfer
 
 You can toggle a transfer on or off using the switch on its row in the source account. When toggled off:
 
 - The transfer is excluded from the source account's projections.
 - The corresponding income in the target account is also excluded.
+
+---
 
 ## Common Transfer Scenarios
 
@@ -120,3 +136,12 @@ Use an end date for transfers that should stop at a known point:
 
 - Example: Funding a vacation account with $200/month until December
 - Set the end date to December 31
+
+---
+
+## See Also
+
+- [Accounts](accounts.md) -- Creating the accounts you transfer between
+- [Expenses](expenses.md) -- Transfers are created as expenses with a special toggle
+- [Income](income.md) -- How incoming transfers appear in the target account
+- [Charts](charts.md) -- How transfers are excluded from spending analysis charts

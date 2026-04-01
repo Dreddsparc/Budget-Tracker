@@ -1,6 +1,10 @@
-# Docker Setup
+# :whale: Docker Setup
 
-## Prerequisites
+Complete reference for the Docker Compose environment: services, Dockerfiles, volume mounts, health checks, startup sequence, and all Makefile commands.
+
+---
+
+## :clipboard: Prerequisites
 
 - **Docker Desktop 4.x or later.** Download from [docker.com/products/docker-desktop](https://www.docker.com/products/docker-desktop/).
 - **Windows only:** WSL 2 must be enabled before installing Docker Desktop. Run `wsl --install` in an admin PowerShell and restart.
@@ -10,11 +14,11 @@
   ```
   You should see `Docker Compose version v2.x.x`. If you see an error or `v1.x`, update Docker Desktop.
 
-## Services
+---
+
+## :package: Services
 
 The application runs as three Docker Compose services: a PostgreSQL database, a Node.js API server, and a Vite dev server for the React client.
-
-## Services
 
 ### db (PostgreSQL)
 
@@ -39,7 +43,9 @@ The application runs as three Docker Compose services: a PostgreSQL database, a 
 - **Depends on:** `server` (healthy)
 - **No health check** configured
 
-## Dockerfiles
+---
+
+## :hammer_and_wrench: Dockerfiles
 
 ### Server Dockerfile (`server/Dockerfile`)
 
@@ -87,7 +93,9 @@ CMD ["npx", "vite", "--host"]
 
 The `--host` flag makes Vite listen on `0.0.0.0` so it is accessible outside the container.
 
-## Volume Mounts
+---
+
+## :open_file_folder: Volume Mounts
 
 Volume mounts enable hot reload by mapping source files from the host into the containers.
 
@@ -101,6 +109,8 @@ volumes:
 
 - `server/src` -- TypeScript source files. Changes trigger `tsx watch` to restart the server.
 - `server/prisma` -- Schema and seed files. Schema changes require running `make db-push` manually.
+
+> **Important:** After editing `server/prisma/schema.prisma`, you must run `make db-push` to apply the changes. The volume mount syncs the file, but the schema is not automatically pushed to the database.
 
 ### Client volumes
 
@@ -126,11 +136,15 @@ A named Docker volume for PostgreSQL data. This persists across `make down` / `m
 make clean-volumes    # docker compose down -v --remove-orphans
 ```
 
-## Startup Sequence
+> **Warning:** `make clean-volumes` permanently destroys the database volume and all data in it. This cannot be undone.
+
+---
+
+## :rocket: Startup Sequence
 
 The dependency chain ensures services start in order:
 
-```
+```text
 1. db starts
      |
      | pg_isready returns success
@@ -153,7 +167,11 @@ The dependency chain ensures services start in order:
 
 The server has a 30-second `start_period` on its health check to allow time for `prisma db push` and `prisma generate` to complete before Docker starts checking.
 
-## Makefile Commands
+> **Tip:** If the server container keeps restarting, check `make logs-server` for Prisma migration errors. The most common cause is a `DATABASE_URL` mismatch or a schema conflict.
+
+---
+
+## :keyboard: Makefile Commands
 
 The Makefile wraps Docker Compose commands for convenience.
 
@@ -201,7 +219,9 @@ The Makefile wraps Docker Compose commands for convenience.
 | `make clean-volumes` | Above + remove database volume (destroys data) |
 | `make clean-all` | Above + remove images and `node_modules`/`dist` directories |
 
-## Environment Variables
+---
+
+## :key: Environment Variables
 
 The `.env` file (not committed) provides database credentials. Expected variables:
 
@@ -212,9 +232,11 @@ The `.env` file (not committed) provides database credentials. Expected variable
 | `POSTGRES_DB` | `budget_tracker` | db service |
 | `DATABASE_URL` | `postgresql://budget:password@db:5432/budget_tracker` | server service |
 
-Note that `DATABASE_URL` uses `db` as the hostname -- this resolves within the Docker network to the database container.
+> **Important:** `DATABASE_URL` uses `db` as the hostname -- this resolves within the Docker network to the database container. Outside Docker, use `localhost` instead.
 
-## Local Development Without Docker
+---
+
+## :computer: Local Development Without Docker
 
 While Docker is the primary development method, you can run services locally:
 
@@ -224,3 +246,11 @@ make typecheck        # TypeScript type checking (both projects)
 ```
 
 You will need a local PostgreSQL instance and must set `DATABASE_URL` accordingly. The Vite proxy expects the server at `http://server:3001`, which will not resolve outside Docker -- you would need to update `vite.config.ts` to point to `http://localhost:3001`.
+
+---
+
+## Related
+
+- [Architecture](architecture.md) -- System overview and how Docker orchestrates the services
+- [Database](database.md) -- Schema, migrations, and the seed script that runs on startup
+- [Adding Features](adding-features.md) -- When new features require schema or dependency changes

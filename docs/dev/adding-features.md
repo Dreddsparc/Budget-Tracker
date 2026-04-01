@@ -1,8 +1,10 @@
-# Adding Features
+# :wrench: Adding Features
 
-This guide covers common extension points in the Budget Tracker codebase.
+A practical guide to the most common extension points in the Budget Tracker codebase. Each section walks through the full set of changes needed, from database to UI.
 
-## Adding a New Chart Type
+---
+
+## :bar_chart: Adding a New Chart Type
 
 Charts are Recharts components that receive `projections: ProjectionDay[]` as props.
 
@@ -63,7 +65,7 @@ No server changes required -- all chart components consume the same `projections
 
 All existing chart components accept an optional `options?: ChartFullscreenOptions` prop. When `options` is provided, the component renders without its card wrapper and uses `options.height` instead of a fixed height. Chart-specific toggles (e.g., `chartStyle`, `barLayout`, `pieStyle`, `trendMode`) are also read from `options` when present.
 
-This pattern keeps chart components backward compatible: callers that omit `options` get the original card-wrapped, fixed-height behavior. The `ChartFullscreen` component is the only caller that provides `options`.
+> **Pattern:** This keeps chart components backward compatible: callers that omit `options` get the original card-wrapped, fixed-height behavior. The `ChartFullscreen` component is the only caller that provides `options`.
 
 To make a new chart work in fullscreen:
 
@@ -73,7 +75,11 @@ To make a new chart work in fullscreen:
 4. If your chart uses SVG gradients with fixed `id` attributes, prefix them (e.g., `"fs-"`) when `options` is present to avoid DOM ID collisions with the non-fullscreen instance.
 5. Add a rendering case for your chart type in `ChartFullscreen.tsx`.
 
-## Adding a New Field to Expenses
+> **Warning:** SVG gradient `id` attributes must be unique across the entire DOM. If both the inline chart and fullscreen chart render simultaneously with the same gradient IDs, one will be invisible. Always prefix IDs when `options` is present.
+
+---
+
+## :heavy_plus_sign: Adding a New Field to Expenses
 
 Adding a field requires changes across the full stack.
 
@@ -134,7 +140,11 @@ In `server/src/routes/spreadsheet.ts`:
 - **Export:** Add a column to the "Planned Expenses" sheet.
 - **Import:** Parse the new column in the expense import section and include it in the create/update data.
 
-## Adding a New API Endpoint
+> **Tip:** Run `make typecheck` after making changes across both projects to catch any type mismatches early.
+
+---
+
+## :electric_plug: Adding a New API Endpoint
 
 ### Account-scoped endpoint
 
@@ -184,7 +194,9 @@ export function getNewDomainData(accountId: string): Promise<NewDomainType[]> {
 }
 ```
 
-## Adding a New Interval Type
+---
+
+## :repeat: Adding a New Interval Type
 
 Intervals affect the projection engine, all forms, and the spreadsheet.
 
@@ -218,6 +230,8 @@ case "SEMIMONTHLY":
   return day === 1 || day === 15;
 ```
 
+> **Important:** Also update the client-side `matchesInterval` equivalent in `client/src/components/monthlyTotal.ts` to keep the monthly total calculation in sync.
+
 ### 3. Update the client enum
 
 In `client/src/types.ts`:
@@ -237,7 +251,9 @@ The `EntryForm` component renders interval options. Add the new value to the int
 
 In `server/src/routes/spreadsheet.ts`, the `VALID_INTERVALS` constant is derived from `Object.values(Interval)`, so it picks up new enum values automatically. No changes needed here.
 
-## Modifying the Projection Engine
+---
+
+## :gear: Modifying the Projection Engine
 
 The projection engine is in `server/src/routes/projections.ts`. Key modification points:
 
@@ -291,7 +307,9 @@ const [incomeSources, expenses, rawTransfers, newSource] = await Promise.all([
 
 Then pass the new data to `applyDay()` and add processing logic there.
 
-## Adding a New Prisma Model
+---
+
+## :card_file_box: Adding a New Prisma Model
 
 1. Define the model in `server/prisma/schema.prisma`.
 2. Run `make db-push` to create the table.
@@ -301,9 +319,11 @@ Then pass the new data to `applyDay()` and add processing logic there.
 6. Add UI components as needed.
 7. If the data should be exportable, update `server/src/routes/spreadsheet.ts` to include a new sheet.
 
-**Real-world example -- ActualSpend:** The `ActualSpend` model follows this pattern exactly. It was added as a new Prisma model with an optional foreign key to `PlannedExpense` (`forecastExpenseId`, `onDelete: SetNull`). A new route file (`server/src/routes/actuals.ts`) provides account-scoped CRUD with ownership validation and category inheritance from the linked forecast. The client gained an `ActualSpend` type, four API functions (`getActuals`, `createActual`, `updateActual`, `deleteActual`), and the `ActualSpendList` component. The projection engine was updated to fetch actuals, build an `actualsMap` by date, and skip forecast expenses that are covered by linked actuals. See [Projections Engine -- Actual Spending Integration](projections-engine.md#actual-spending-integration) for the engine changes.
+> **Pattern:** The `ActualSpend` model is a real-world example of this pattern. It was added as a new Prisma model with an optional foreign key to `PlannedExpense` (`forecastExpenseId`, `onDelete: SetNull`). A new route file (`server/src/routes/actuals.ts`) provides account-scoped CRUD with ownership validation and category inheritance from the linked forecast. The client gained an `ActualSpend` type, four API functions (`getActuals`, `createActual`, `updateActual`, `deleteActual`), and the `ActualSpendList` component. The projection engine was updated to fetch actuals, build an `actualsMap` by date, and skip forecast expenses that are covered by linked actuals. See [Projections Engine -- Actual Spending Integration](projections-engine.md#actual-spending-integration) for the engine changes.
 
-## Checklist for Any Feature
+---
+
+## :white_check_mark: Checklist for Any Feature
 
 - [ ] Schema change applied (`make db-push`)
 - [ ] Server route handles the new data
@@ -312,3 +332,15 @@ Then pass the new data to `applyDay()` and add processing logic there.
 - [ ] UI component renders and accepts the data
 - [ ] Spreadsheet export/import updated (if applicable)
 - [ ] TypeScript compiles cleanly (`make typecheck`)
+
+---
+
+## Related
+
+- [Architecture](architecture.md) -- System overview for understanding where changes fit
+- [Database](database.md) -- Schema reference for adding models and fields
+- [API Reference](api.md) -- Endpoint conventions and patterns
+- [Projections Engine](projections-engine.md) -- Engine internals for projection modifications
+- [Client Architecture](client-architecture.md) -- Component tree and state flow for UI changes
+- [Spreadsheet Import/Export](spreadsheet.md) -- Workbook structure for adding export columns
+- [Testing](testing.md) -- What to test after adding features

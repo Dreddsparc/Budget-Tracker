@@ -1,6 +1,10 @@
-# Spreadsheet Import/Export
+# :page_facing_up: Spreadsheet Import/Export
+
+Your guide to bulk-editing budget data in Excel or Google Sheets and syncing changes back to the app.
 
 Budget Tracker lets you export your financial data to an Excel spreadsheet (.xlsx), make changes in any spreadsheet application, and import the modified file back. This is useful for bulk editing, sharing data, or keeping an offline backup.
+
+---
 
 ## Exporting Data
 
@@ -22,7 +26,9 @@ The spreadsheet includes the following sheets:
 | **Price Adjustments** | All price adjustments for variable expenses, with expense ID, amount, date, and note |
 | **Category Colors** | Category names, colors, and descriptions |
 
-> **Note:** Each row with existing data has an **ID** column. This ID is how the import process matches rows to existing records. Do not modify or delete ID values for rows you want to update.
+> **Important:** Each row with existing data has an **ID** column. This ID is how the import process matches rows to existing records. Do not modify or delete ID values for rows you want to update.
+
+---
 
 ## Editing in a Spreadsheet Application
 
@@ -47,7 +53,9 @@ To delete an income source, expense, or price adjustment:
 1. Remove the entire row from the spreadsheet.
 2. When you import, Budget Tracker notices the row is missing and deletes the corresponding record.
 
-### Important Format Rules
+### Format Rules
+
+> **Important:** Follow these rules to ensure a clean import.
 
 - **Intervals** must use the exact values: ONE_TIME, DAILY, WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, or YEARLY.
 - **Dates** should be in a standard date format (the format used in the export will work).
@@ -55,6 +63,8 @@ To delete an income source, expense, or price adjustment:
 - **Active status** should be TRUE or FALSE.
 - **Do not rename sheets** -- Budget Tracker identifies sheets by their names.
 - **Do not rearrange columns** -- the import expects columns in the same order as the export.
+
+---
 
 ## Importing Data
 
@@ -83,6 +93,8 @@ Imports are scoped to the currently selected account. If you export from your ch
 
 > **Tip:** Always export first, make changes to that export, and import it back to the same account. This avoids accidentally applying changes to the wrong account.
 
+---
+
 ## Common Spreadsheet Workflows
 
 ### Bulk-Adding Expenses
@@ -104,3 +116,12 @@ Imports are scoped to the currently selected account. If you export from your ch
 2. Share the .xlsx file.
 3. Your partner reviews and suggests changes.
 4. Import the edited file.
+
+---
+
+## See Also
+
+- [Expenses](expenses.md) -- Understanding expense fields that appear in the spreadsheet
+- [Income](income.md) -- Understanding income fields that appear in the spreadsheet
+- [Categories](categories.md) -- The Category Colors sheet and how categories sync
+- [Tips and Workflows](tips.md) -- Bulk editing workflow with the spreadsheet

@@ -77,17 +77,31 @@ A personal finance forecasting tool that projects your bank balance day-by-day b
 
 ## Screenshots
 
-**Balance Projection Dashboard**
+### Balance Projection
 ![Dashboard with projection chart, income, and expenses](docs/screenshots/dashboard.png)
+*Day-by-day balance forecast with category-colored line, income and expense panels*
 
-**Spending by Category**
+### Spending by Category
 ![Donut chart showing expense breakdown by category](docs/screenshots/spending-pie.png)
+*See where your money goes at a glance — transfers excluded*
 
-**Fullscreen Chart with Zoom**
+### Income vs Expenses | Cash Flow
+| ![Income vs Expenses](docs/screenshots/income-vs-expenses.png) | ![Cash Flow](docs/screenshots/cash-flow.png) |
+|---|---|
+| *Monthly income and expense comparison* | *Net surplus or deficit each month* |
+
+### Expense Trends
+![Expense trends stacked area chart](docs/screenshots/expense-trends.png)
+*Weekly spending trends by category over time*
+
+### Fullscreen with Zoom
 ![Fullscreen projection chart with tooltip and range sliders](docs/screenshots/fullscreen-chart.png)
+*Expand any chart, zoom to a date range, toggle between Area and Line views*
 
-**Ledger View**
-![Transaction ledger with summary stats and filters](docs/screenshots/ledger-view.png)
+### Ledger View | Built-in Help
+| ![Ledger view](docs/screenshots/ledger-view.png) | ![Help panel](docs/screenshots/help-panel.png) |
+|---|---|
+| *Transaction-level detail with filters and search* | *11-topic help system with contextual navigation* |
 
 ---
 

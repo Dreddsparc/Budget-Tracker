@@ -1,18 +1,22 @@
-# Client Architecture
+# :deciduous_tree: Client Architecture
 
-The client is a React 19 single-page application built with Vite, Tailwind CSS v4, and DaisyUI v5. There is no client-side router -- the entire UI is rendered by `App.tsx`.
+Detailed reference for the React client: component tree, state management, data flow, and how projections feed charts and the ledger. The client is a React 19 single-page application built with Vite, Tailwind CSS v4, and DaisyUI v5. There is no client-side router -- the entire UI is rendered by `App.tsx`.
 
-## Entry Point
+---
 
-```
+## :door: Entry Point
+
+```text
 client/src/main.tsx  ->  App.tsx
 ```
 
 `main.tsx` renders `<App />` into the root DOM element. All application state and data fetching lives in `App.tsx`.
 
-## Component Tree
+---
 
-```
+## :evergreen_tree: Component Tree
+
+```text
 App
   |-- Navbar
   |     |-- Account selector (dropdown)
@@ -62,7 +66,9 @@ App
         |-- CategoryManageModal
 ```
 
-## State Management
+---
+
+## :file_cabinet: State Management
 
 All state lives in `App.tsx` using `useState` hooks. There is no external state management library (no Redux, Zustand, or Context providers).
 
@@ -109,7 +115,9 @@ interface Override {
 }
 ```
 
-## Data Flow
+---
+
+## :arrows_counterclockwise: Data Flow
 
 ### Initial Load Sequence
 
@@ -121,7 +129,7 @@ interface Override {
 
 ### fetchAll (lines 81-115)
 
-```
+```typescript
 Promise.all([
   api.getBalance(accountId),
   api.getIncome(accountId),
@@ -138,7 +146,7 @@ After fetching:
 
 ### fetchProjections (lines 118-134)
 
-```
+```typescript
 api.getProjections(accountId, range, activeOverrides)
 ```
 
@@ -170,6 +178,8 @@ All chart components receive `projections` as a prop. Some also receive `categor
 7. Escape key behavior cascades: if zoom select is active, it cancels zoom select; if a zoom range is set, it resets the zoom; otherwise it closes the fullscreen overlay.
 8. Chart-specific toggles (e.g., area vs line, grouped vs stacked, donut vs full) are managed as local state within `ChartFullscreen` and passed to the chart component via the `options` prop.
 
+> **Pattern:** Fullscreen zoom works by slicing the `projections` array by index, then passing the narrowed array to the chart component. No chart-level axis configuration is involved. This keeps charts simple -- they always render whatever data they receive.
+
 ### Override Flow
 
 1. User clicks a toggle on an income or expense item.
@@ -188,7 +198,9 @@ When data is modified (income/expense CRUD, balance set), the pattern is:
 3. `onRefresh` re-fetches the specific data (income or expenses) and calls `refresh()`.
 4. `refresh()` increments `refreshKey`, which triggers `fetchProjections`.
 
-## Key Components
+---
+
+## :jigsaw: Key Components
 
 ### DateRangeBar
 
@@ -233,11 +245,15 @@ Collapsible card panel for managing actual spending records. Contains an add/edi
 
 Utility module exporting `calcMonthlyTotal()`. Calculates how many times income or expense items fire in the current calendar month using client-side interval matching that mirrors the server's `matchesInterval` logic. Used by `IncomeList` and `ExpenseList` to display a monthly total in the collapsed panel header.
 
+> **Important:** The client-side interval matching in `monthlyTotal.ts` must stay in sync with the server's `matchesInterval` function in `projections.ts`. If you change one, update the other.
+
 ### SpreadsheetControls
 
 Export and import buttons. Export triggers a file download via `api.exportSpreadsheet`. Import opens a file picker and uploads via `api.importSpreadsheet`, then calls `onImportComplete` (which is `fetchAll`).
 
-## API Layer
+---
+
+## :globe_with_meridians: API Layer
 
 `client/src/api.ts` is a single file containing all API calls. The core helper:
 
@@ -264,9 +280,13 @@ Two functions bypass the JSON helper:
 - `exportSpreadsheet` -- returns a `Blob` for file download.
 - `importSpreadsheet` -- sends `FormData` (no JSON Content-Type header).
 
-## Type Definitions
+---
+
+## :label: Type Definitions
 
 `client/src/types.ts` contains all client-side interfaces and shared type aliases. These are manually kept in sync with the Prisma schema -- there is no code generation step.
+
+> **Warning:** Client types in `types.ts` must be manually updated whenever the Prisma schema changes. There is no automated sync between the server schema and client types.
 
 The `ChartType` union type (`"projection" | "spending" | "income-vs-expenses" | "cash-flow" | "expense-trend"`) and the `ChartFullscreenOptions` interface are also defined here. `ChartType` was moved from `App.tsx` to `types.ts` so it can be shared between `App.tsx` and `ChartFullscreen.tsx`.
 
@@ -277,6 +297,18 @@ Key differences from the server types:
 - `ActualSpend` includes the optional nested `forecastExpense` summary (`{ id, name, category }`).
 - `ProjectionEvent` includes the optional `isActual` boolean flag.
 
-## Styling
+---
+
+## :art: Styling
 
 The client uses Tailwind CSS v4 with DaisyUI v5 for component styling. All styles are applied through utility classes directly in JSX -- there are no separate CSS modules or styled-components. DaisyUI provides pre-built components like `btn`, `card`, `modal`, `tabs`, `select`, and `navbar`.
+
+---
+
+## Related
+
+- [Architecture](architecture.md) -- System overview and how the client fits into the stack
+- [API Reference](api.md) -- Every endpoint the client calls
+- [Projections Engine](projections-engine.md) -- How the server computes the data that feeds charts
+- [Adding Features](adding-features.md) -- How to add new chart types or UI components
+- [Testing](testing.md) -- Recommended client test strategies with React Testing Library
