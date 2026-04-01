@@ -587,10 +587,33 @@ router.post("/import", upload.single("file"), async (req, res) => {
       const seenIds = new Set<string>();
       const expenseOps: Promise<void>[] = [];
 
-      // Build account name→id lookup for resolving transfer targets
-      const importAccounts = await prisma.account.findMany({ select: { id: true, name: true } });
-      const accountIdByName = new Map(importAccounts.map((a) => [a.name.toLowerCase(), a.id]));
+      // First pass: find transfer target accounts that need to be created
+      const neededAccounts = new Set<string>();
+      let importAccounts = await prisma.account.findMany({ select: { id: true, name: true } });
+      let accountIdByName = new Map(importAccounts.map((a) => [a.name.toLowerCase(), a.id]));
 
+      expSheet.eachRow((row, rowNum) => {
+        if (rowNum === 1) return;
+        const isTransfer = parseBool(row.getCell(10).value);
+        const transferToAccountName = String(row.getCell(11).value || "").trim();
+        if (isTransfer && transferToAccountName && !accountIdByName.has(transferToAccountName.toLowerCase())) {
+          neededAccounts.add(transferToAccountName);
+        }
+      });
+
+      // Auto-create missing transfer target accounts
+      for (const acctName of neededAccounts) {
+        await prisma.account.create({ data: { name: acctName } });
+        results.errors.push(`Auto-created account "${acctName}" for transfer target`);
+      }
+
+      // Refresh account lookup if we created any
+      if (neededAccounts.size > 0) {
+        importAccounts = await prisma.account.findMany({ select: { id: true, name: true } });
+        accountIdByName = new Map(importAccounts.map((a) => [a.name.toLowerCase(), a.id]));
+      }
+
+      // Second pass: process expense rows
       expSheet.eachRow((row, rowNum) => {
         if (rowNum === 1) return;
 
@@ -627,7 +650,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
           if (resolved) {
             transferToAccountId = resolved;
           } else {
-            results.errors.push(`Expense row ${rowNum}: transfer target "${transferToAccountName}" not found, importing as regular expense`);
+            results.errors.push(`Expense row ${rowNum}: transfer target "${transferToAccountName}" not found`);
           }
         }
 

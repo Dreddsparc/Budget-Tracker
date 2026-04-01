@@ -18,6 +18,7 @@ A personal finance forecasting tool that projects your bank balance day-by-day b
 - [Common Workflows](#common-workflows)
 - [Environment Variables](#environment-variables)
 - [Contributing](#contributing)
+- [Changelog](#changelog)
 - [License](#license)
 
 ---
@@ -398,7 +399,18 @@ The defaults work out of the box for local development. **For any shared or prod
 
 ## Contributing
 
-Contributions are welcome! Please open an issue to discuss what you'd like to change before submitting a pull request.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on reporting bugs, suggesting features, submitting code, and our privacy principles.
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a summary of all releases, or browse the [changelogs/](changelogs/) directory for detailed per-version notes.
+
+| Version | Date | Highlights |
+|---------|------|------------|
+| [v1.2](changelogs/v1.2.md) | 2026-03-31 | Actual spending, fullscreen charts, help system, category management |
+| [v1.0](changelogs/v1.0.md) | 2026-03-28 | Initial release — multi-account, projections, 5 charts, spreadsheet exchange |
 
 ---
 
