@@ -761,6 +761,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
         select: { id: true, name: true },
       });
       const expenseIdByName = new Map(expensesForLookup.map((e) => [e.name.toLowerCase(), e.id]));
+      const validExpenseIds = new Set(expensesForLookup.map((e) => e.id));
 
       actSheetImport.eachRow((row, rowNum) => {
         if (rowNum === 1) return;
@@ -780,8 +781,14 @@ router.post("/import", upload.single("file"), async (req, res) => {
         const forecastName = String(row.getCell(6).value || "").trim();
         let forecastExpenseId = String(row.getCell(7).value || "").trim() || null;
 
-        // Resolve forecast by name if ID not provided
-        if (!forecastExpenseId && forecastName) {
+        // Validate/resolve forecast link
+        if (forecastExpenseId && !validExpenseIds.has(forecastExpenseId)) {
+          // ID from spreadsheet doesn't exist — try resolving by name
+          forecastExpenseId = forecastName ? expenseIdByName.get(forecastName.toLowerCase()) || null : null;
+          if (!forecastExpenseId) {
+            results.errors.push(`Actual row ${rowNum}: linked forecast no longer exists, importing as unlinked`);
+          }
+        } else if (!forecastExpenseId && forecastName) {
           forecastExpenseId = expenseIdByName.get(forecastName.toLowerCase()) || null;
           if (!forecastExpenseId) {
             results.errors.push(`Actual row ${rowNum}: forecast "${forecastName}" not found, importing as unlinked`);
