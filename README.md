@@ -77,7 +77,17 @@ A personal finance forecasting tool that projects your bank balance day-by-day b
 
 ## Screenshots
 
-*Coming soon — run `make dev` and see for yourself!*
+**Balance Projection Dashboard**
+![Dashboard with projection chart, income, and expenses](docs/screenshots/dashboard.png)
+
+**Spending by Category**
+![Donut chart showing expense breakdown by category](docs/screenshots/spending-pie.png)
+
+**Fullscreen Chart with Zoom**
+![Fullscreen projection chart with tooltip and range sliders](docs/screenshots/fullscreen-chart.png)
+
+**Ledger View**
+![Transaction ledger with summary stats and filters](docs/screenshots/ledger-view.png)
 
 ---
 

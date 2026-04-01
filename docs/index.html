@@ -118,6 +118,35 @@
     .privacy-item h3 { font-size: 0.95rem; margin-bottom: 2px; }
     .privacy-item p { font-size: 0.85rem; color: var(--text-muted); }
 
+    /* Screenshots */
+    .screenshots {
+      padding: 60px 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .screenshots h2 { text-align: center; font-size: 1.8rem; margin-bottom: 40px; }
+    .screenshot-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(480px, 1fr));
+      gap: 24px;
+    }
+    .screenshot-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .screenshot-card img {
+      width: 100%;
+      display: block;
+    }
+    .screenshot-card .caption {
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    .screenshot-card .caption strong { color: var(--text); }
+
     /* Features */
     .features {
       padding: 60px 20px;
@@ -264,6 +293,29 @@
           <h3>No Cloud Required</h3>
           <p>Works offline after setup. No subscription. No server costs. Open source and free forever.</p>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots -->
+  <section class="screenshots">
+    <h2>See It in Action</h2>
+    <div class="screenshot-grid">
+      <div class="screenshot-card">
+        <img src="screenshots/dashboard.png" alt="Budget Tracker dashboard with projection chart" loading="lazy">
+        <div class="caption"><strong>Balance Projection</strong> — Day-by-day balance forecast with category-colored line, income and expense panels below</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/spending-pie.png" alt="Spending by category donut chart" loading="lazy">
+        <div class="caption"><strong>Spending by Category</strong> — See where your money goes at a glance (transfers excluded)</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/fullscreen-chart.png" alt="Fullscreen chart with zoom controls" loading="lazy">
+        <div class="caption"><strong>Fullscreen Zoom</strong> — Expand any chart, zoom into date ranges, toggle between area and line views</div>
+      </div>
+      <div class="screenshot-card">
+        <img src="screenshots/ledger-view.png" alt="Transaction ledger with filters" loading="lazy">
+        <div class="caption"><strong>Ledger View</strong> — Every transaction with running balance, filters, search, and summary stats</div>
       </div>
     </div>
   </section>
